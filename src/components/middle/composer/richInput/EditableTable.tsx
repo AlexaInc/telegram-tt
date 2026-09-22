@@ -892,14 +892,14 @@ const EditableTable = ({
         {isTableSelection && (
           <>
             <MenuItem
-              icon={layout.isStriped ? 'check' : 'table'}
+              icon={layout.isStriped ? 'check' : 'table-striped'}
               withPreventDefaultOnMouseDown
               onClick={() => handleToggleTableAttr('isStriped')}
             >
               {lang('RichEditorTableStriped')}
             </MenuItem>
             <MenuItem
-              icon={!layout.isBordered ? 'check' : 'table'}
+              icon={!layout.isBordered ? 'check' : 'table-borderless'}
               withPreventDefaultOnMouseDown
               onClick={() => handleToggleTableAttr('isBordered')}
             >
