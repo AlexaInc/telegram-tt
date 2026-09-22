@@ -1,5 +1,6 @@
 import type { TLMessage } from '../tl/core';
 
+import { throttle } from '../../../util/schedulers';
 import { RPCError, RPCMessageToError } from '../errors';
 import {
   BinaryReader, type Logger, MessagePacker,
@@ -47,6 +48,8 @@ const SERVER_SALT_REQUEST_RETRY_DELAY = 60000;
 const MILLISECONDS_PER_SECOND = 1000;
 const TRANSPORT_CODE_LENGTH = 4;
 const MESSAGE_ID_TOO_HIGH_ERROR_CODE = 17;
+const ACK_FLUSH_DELAY = 10000;
+const ACK_FLUSH_THRESHOLD = 16;
 
 type SentMessage = {
   msgId: bigint;
@@ -1096,7 +1099,7 @@ export default class MTProtoSender {
     this.logWithIndex.debug(`Process message ${message.obj.className}`);
 
     // https://core.telegram.org/mtproto/description#message-sequence-number-msg-seqno
-    if (message.isContentRelated) this._pendingAck.add(message.msgId);
+    if (message.isContentRelated) this.acknowledgeMessage(message.msgId);
 
     if (this.getConnection()!.shouldLongPoll) {
       this._sendQueue.setReady?.(true);
@@ -1111,6 +1114,23 @@ export default class MTProtoSender {
 
     await handler(message);
   }
+
+  private acknowledgeMessage(msgId: bigint) {
+    this._pendingAck.add(msgId);
+    if (this._pendingAck.size >= ACK_FLUSH_THRESHOLD) {
+      this._sendQueue.setReady?.(true);
+      return;
+    }
+
+    this.scheduleAckFlush();
+  }
+
+  // Flush ACKs even when no new requests wake the send loop
+  private scheduleAckFlush = throttle(() => {
+    if (!this._userConnected || this.isReconnecting || !this._pendingAck.size) return;
+
+    this._sendQueue.setReady?.(true);
+  }, ACK_FLUSH_DELAY, false);
 
   /**
    * Pops the states known to match the given ID from pending messages.
@@ -1497,7 +1517,7 @@ export default class MTProtoSender {
    */
   _handleDetailedInfo(message: TLMessage) {
     const { answerMsgId } = message.obj;
-    this._pendingAck.add(answerMsgId);
+    this.acknowledgeMessage(answerMsgId);
     this._log.debug(`Handling detailed info for message ${answerMsgId}`);
   }
 
@@ -1511,7 +1531,7 @@ export default class MTProtoSender {
    */
   _handleNewDetailedInfo(message: TLMessage) {
     const { answerMsgId } = message.obj;
-    this._pendingAck.add(answerMsgId);
+    this.acknowledgeMessage(answerMsgId);
     this._log.debug(`Handling new detailed info for message ${answerMsgId}`);
   }
 
