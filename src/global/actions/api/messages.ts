@@ -1943,6 +1943,23 @@ addActionHandler('rescheduleMessage', (global, actions, payload): ActionReturnTy
   });
 });
 
+addActionHandler('saveVoiceWaveform', (global, actions, payload): ActionReturnType => {
+  const { chatId, messageId, waveform } = payload;
+
+  const message = selectChatMessage(global, chatId, messageId);
+  const voice = message?.content.voice;
+  if (!voice || voice.waveform?.length) {
+    return undefined;
+  }
+
+  return updateChatMessage(global, chatId, messageId, {
+    content: {
+      ...message.content,
+      voice: { ...voice, waveform },
+    },
+  });
+});
+
 addActionHandler('transcribeAudio', async (global, actions, payload): Promise<void> => {
   const { messageId, chatId } = payload;
 

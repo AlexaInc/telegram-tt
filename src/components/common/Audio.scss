@@ -141,6 +141,10 @@
         background-color: var(--color-primary) !important;
       }
     }
+
+    .voice-duration.unread::after {
+      background-color: var(--accent-color);
+    }
   }
 
   .download-button {
@@ -212,7 +216,7 @@
       margin-inline-start: 0.125rem;
       border-radius: 50%;
 
-      background-color: var(--accent-color);
+      background-color: var(--color-primary);
     }
   }
 

@@ -31,15 +31,20 @@ import { makeTrackId } from '../../util/audioPlayer';
 import buildClassName from '../../util/buildClassName';
 import { captureEvents } from '../../util/captureEvents';
 import { formatMediaDateTime, formatMediaDuration, formatPastTimeShort } from '../../util/dates/oldDateFormat';
+import {
+  generateVoiceWaveform, getGeneratedVoiceWaveform, MAX_GENERATED_WAVEFORM_DURATION,
+  releaseVoiceWaveformRequest, retainVoiceWaveformRequest,
+} from '../../util/voiceWaveform';
 import { decodeWaveform, interpolateArray } from '../../util/waveform';
 import { LOCAL_TGS_URLS } from './helpers/animatedAssets';
 import renderText from './helpers/renderText';
-import { MAX_EMPTY_WAVEFORM_POINTS, renderWaveform } from './helpers/waveform';
+import { renderWaveform } from './helpers/waveform';
 
 import useAppLayout from '../../hooks/useAppLayout';
 import useAudioPlayer from '../../hooks/useAudioPlayer';
 import useBuffering from '../../hooks/useBuffering';
 import useContextMenuHandlers from '../../hooks/useContextMenuHandlers';
+import useForceUpdate from '../../hooks/useForceUpdate';
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
 import useMedia from '../../hooks/useMedia';
@@ -205,7 +210,9 @@ const Audio = ({
   const reversePlayProgress = 1 - playProgress;
   const isOwn = isOwnMessage(message);
   const isReverse = hasTtl && isInOneTimeModal;
+  const withWaveform = origin === AudioOrigin.Inline || isInOneTimeModal || isTranscribed;
 
+  const generatedWaveform = useGeneratedVoiceWaveform(message, mediaSource, withWaveform);
   const waveformCanvasRef = useWaveformCanvas(
     theme,
     mediaSource,
@@ -214,6 +221,7 @@ const Audio = ({
     !noAvatars,
     isMobile,
     isReverse,
+    generatedWaveform,
   );
 
   const withSeekline = isPlaying || (playProgress > 0 && playProgress < 1);
@@ -503,7 +511,7 @@ const Audio = ({
         onDateClick ? handleDateClick : undefined,
       )}
       {origin === AudioOrigin.SharedMedia && mediaSource && renderWithTitle()}
-      {(origin === AudioOrigin.Inline || isInOneTimeModal || isTranscribed) && mediaSource && (
+      {withWaveform && mediaSource && (
         renderVoice(
           mediaSource,
           seekerRef,
@@ -703,6 +711,7 @@ function useWaveformCanvas(
   withAvatar = false,
   isMobile = false,
   isReverse = false,
+  generatedWaveform?: number[],
 ) {
   const canvasRef = useRef<HTMLCanvasElement>();
 
@@ -711,21 +720,24 @@ function useWaveformCanvas(
       return undefined;
     }
 
-    const { waveform, duration } = media;
+    const { duration } = media;
+    const { MIN_SPIKES, MAX_SPIKES } = getSeeklineSpikeAmounts(isMobile, withAvatar);
+    const durationFactor = Math.min(duration / AVG_VOICE_DURATION, 1);
+    const spikesCount = Math.round(MIN_SPIKES + (MAX_SPIKES - MIN_SPIKES) * durationFactor);
+
+    const waveform = media.waveform?.length ? media.waveform : generatedWaveform;
+    // An empty waveform keeps the same spikes count, so the width stays stable once the real one is generated
     if (!waveform) {
       return {
-        data: new Array(Math.min(duration, MAX_EMPTY_WAVEFORM_POINTS)).fill(0),
+        data: new Array(spikesCount).fill(0),
         peak: 0,
       };
     }
 
-    const { MIN_SPIKES, MAX_SPIKES } = getSeeklineSpikeAmounts(isMobile, withAvatar);
-    const durationFactor = Math.min(duration / AVG_VOICE_DURATION, 1);
-    const spikesCount = Math.round(MIN_SPIKES + (MAX_SPIKES - MIN_SPIKES) * durationFactor);
     const decodedWaveform = decodeWaveform(new Uint8Array(waveform));
 
     return interpolateArray(decodedWaveform, spikesCount);
-  }, [isMobile, media, withAvatar]) || {};
+  }, [generatedWaveform, isMobile, media, withAvatar]) || {};
 
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
@@ -750,6 +762,41 @@ function useWaveformCanvas(
   }, [isOwn, peak, playProgress, spikes, theme, isReverse]);
 
   return canvasRef;
+}
+
+function useGeneratedVoiceWaveform(message: ApiMessage, media?: ApiVoice | ApiVideo, isEnabled?: boolean) {
+  const { saveVoiceWaveform } = getActions();
+
+  const voice = (
+    isEnabled && media?.mediaType === 'voice' && !media.waveform?.length
+    && media.duration <= MAX_GENERATED_WAVEFORM_DURATION
+  ) ? media : undefined;
+  const generatedWaveform = voice && getGeneratedVoiceWaveform(voice);
+  const forceUpdate = useForceUpdate();
+
+  useEffect(() => {
+    if (!voice) return undefined;
+
+    // Saving into the message persists the waveform, so it is not generated again after reload
+    if (generatedWaveform) {
+      saveVoiceWaveform({ chatId: message.chatId, messageId: message.id, waveform: generatedWaveform });
+      return undefined;
+    }
+
+    const { id } = voice;
+    retainVoiceWaveformRequest(id);
+    let isCancelled = false;
+    generateVoiceWaveform(voice).then((waveform) => {
+      if (!isCancelled && waveform) forceUpdate();
+    });
+
+    return () => {
+      isCancelled = true;
+      releaseVoiceWaveformRequest(id);
+    };
+  }, [voice, generatedWaveform, message.chatId, message.id]);
+
+  return generatedWaveform;
 }
 
 function renderSeekline(

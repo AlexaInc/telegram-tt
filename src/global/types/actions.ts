@@ -2938,6 +2938,11 @@ export interface ActionPayloads {
     chatId: string;
     messageId: number;
   };
+  saveVoiceWaveform: {
+    chatId: string;
+    messageId: number;
+    waveform: number[];
+  };
 
   loadPremiumGifts: undefined;
   loadTonGifts: undefined;
