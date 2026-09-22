@@ -862,7 +862,7 @@
   }
 
   .message-media-duration {
-    background: var(--pattern-color);
+    @include mixins.action-message-bg;
   }
 
   .media-inner {
