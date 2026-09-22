@@ -1,3 +1,5 @@
+@use "../../../../styles/mixins";
+
 .menu {
   z-index: var(--z-reaction-picker) !important;
 
@@ -90,4 +92,10 @@
 
 .hidden {
   display: none !important;
+}
+
+.extendedPicker {
+  height: calc(100% + 2rem);
+
+  @include mixins.gradient-border-bottom(calc(2rem + 0.5rem), calc(2rem + 0.0625rem));
 }
