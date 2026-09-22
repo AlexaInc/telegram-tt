@@ -39,7 +39,7 @@
   }
 
   .player-button {
-    --color-text-secondary: var(--color-primary);
+    --button-text-color: var(--color-primary);
     --color-text-secondary-rgb: var(--color-primary-shade-rgb);
     --color-primary-shade: var(--color-active);
     --color-white: var(--color-background-own);
@@ -173,7 +173,7 @@
     }
 
     &.applied {
-      --color-text-secondary: var(--color-primary);
+      --button-text-color: var(--color-primary);
     }
 
     .playback-button-inner {

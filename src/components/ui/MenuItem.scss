@@ -54,7 +54,6 @@
   .icon {
     margin-right: 2rem;
     font-size: 1.5rem;
-    color: var(--color-icon-secondary);
   }
 
   .menu-item-name {
@@ -79,10 +78,6 @@
 
   &.destructive {
     color: var(--color-error);
-
-    .icon {
-      color: inherit;
-    }
   }
 
   &:not(.has-ripple):not(.disabled):not(.compact):active {

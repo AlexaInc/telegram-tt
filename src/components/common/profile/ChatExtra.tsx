@@ -376,13 +376,12 @@ const ChatExtra = ({
         })
       : undefined;
 
-    const isSettingsUsername = Boolean(isInSettings) && !isChat;
-    const plainIcon = isChat ? 'link' : 'mention';
+    const hasFilledIcon = !isChat;
 
     return (
       <ListItem
-        icon={isSettingsUsername ? 'mention-filled' : plainIcon}
-        iconBg={isSettingsUsername ? 'blue' : undefined}
+        icon={hasFilledIcon ? 'mention-filled' : 'link'}
+        iconBg={hasFilledIcon ? 'blue' : undefined}
         multiline
         narrow
         ripple
@@ -443,8 +442,8 @@ const ChatExtra = ({
       <Island>
         {Boolean(formattedNumber?.length) && (
           <ListItem
-            icon={isInSettings ? 'phone-filled' : 'phone'}
-            iconBg={isInSettings ? 'green' : undefined}
+            icon="phone-filled"
+            iconBg="green"
             className={styles.phone}
             multiline
             narrow
@@ -459,8 +458,8 @@ const ChatExtra = ({
         {activeUsernames && renderUsernames(activeUsernames)}
         {description && Boolean(description.length) && (
           <ListItem
-            icon={isInSettings ? 'bio-filled' : 'info'}
-            iconBg={isInSettings ? 'gray' : undefined}
+            icon="bio-filled"
+            iconBg="gray"
             className={styles.description}
             multiline
             narrow
@@ -519,7 +518,8 @@ const ChatExtra = ({
         )}
         {!isOwnProfile && !isInSettings && (
           <ListItem
-            icon={isMuted ? 'mute' : 'unmute'}
+            icon="notifications-filled"
+            iconBg="red"
             className={styles.notifications}
             narrow
             ripple
@@ -535,12 +535,12 @@ const ChatExtra = ({
           </ListItem>
         )}
         {businessWorkHours && (
-          <BusinessHours businessHours={businessWorkHours} isInSettings={isInSettings} />
+          <BusinessHours businessHours={businessWorkHours} />
         )}
         {businessLocation && (
           <ListItem
-            icon={isInSettings ? 'location-filled' : 'location'}
-            iconBg={isInSettings ? 'red' : undefined}
+            icon="location-filled"
+            iconBg="green"
             ripple
             multiline
             narrow
@@ -614,7 +614,8 @@ const ChatExtra = ({
         )}
         {userFullInfo && 'isBotAccessEmojiGranted' in userFullInfo && (
           <ListItem
-            icon="user"
+            icon="user-filled"
+            iconBg="blue"
             className={styles.botEmojiStatus}
             narrow
             ripple
@@ -630,7 +631,8 @@ const ChatExtra = ({
         )}
         {botAppPermissions?.geolocation !== undefined && (
           <ListItem
-            icon="location"
+            icon="location-filled"
+            iconBg="green"
             className={styles.botLocation}
             narrow
             ripple
@@ -646,7 +648,8 @@ const ChatExtra = ({
         )}
         {canViewSubscribers && (
           <ListItem
-            icon="group"
+            icon="group-filled"
+            iconBg="green"
             narrow
             multiline
             ripple

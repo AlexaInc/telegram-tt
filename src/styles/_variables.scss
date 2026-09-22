@@ -102,7 +102,7 @@
     --color-interactive-inactive: rgba(var(--color-text-secondary-rgb), 0.25);
     --color-interactive-buffered: rgba(var(--color-text-secondary-rgb), 0.25); // Overlays underlying inactive element
     --color-interactive-element-hover: rgba(var(--color-text-secondary-rgb), 0.08);
-    --color-composer-button: #{$color-text-secondary}CC;
+    --color-composer-button: #{$color-black};
     --color-toast-background: #202020CC;
 
     --color-voice-transcribe-button: #e8f3ff;
