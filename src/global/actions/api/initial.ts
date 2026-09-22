@@ -2,13 +2,14 @@ import type { ActionReturnType } from '../../types';
 import { ManagementProgress } from '../../../types';
 
 import {
+  IS_SCREEN_LOCKED_CACHE_KEY,
   LANG_CACHE_NAME,
-  LOCK_SCREEN_ANIMATION_DURATION_MS,
   MEDIA_CACHE_NAME,
   MEDIA_CACHE_NAME_AVATARS,
   MEDIA_PROGRESSIVE_CACHE_NAME,
 } from '../../../config';
 import { updateAppBadge } from '../../../util/appBadge';
+import { MAIN_IDB_STORE } from '../../../util/browser/idb';
 import { toCredentialRequestOptions } from '../../../util/browser/passkeys';
 import {
   IS_WEBAUTHN_SUPPORTED,
@@ -20,10 +21,14 @@ import {
   ACCOUNT_SLOT, getAccountsInfo, getAccountSlotUrl, getFirstLoggedInAccountSlot,
 } from '../../../util/multiaccount';
 import { unsubscribe } from '../../../util/notifications';
-import { clearEncryptedSession, encryptSession, forgetPasscode } from '../../../util/passcode';
+import {
+  clearPasscodeStore, removeGlobalsVaultForSlot, requestPasscodeStateLock,
+} from '../../../util/passcode';
+import { broadcastPasscodeReset } from '../../../util/passcode/channel';
 import { parseInitialLocationHash, resetInitialLocationHash, resetLocationHash } from '../../../util/routing';
 import { pause } from '../../../util/schedulers';
 import {
+  clearAllStoredSessions,
   clearStoredSession,
   loadStoredSession,
   storeSession,
@@ -33,22 +38,24 @@ import { forceWebsync } from '../../../util/websync';
 import {
   callApi, callApiLocal, initApi, setShouldEnableDebugLog,
 } from '../../../api/gramjs';
-import {
-  removeGlobalFromCache, removeSharedStateFromCache, serializeGlobal, serializeShared,
-} from '../../cache';
+import { removeGlobalFromCache, removeSharedStateFromCache } from '../../cache';
 import {
   addActionHandler, getGlobal, setGlobal,
 } from '../../index';
 import {
-  clearGlobalForLockScreen, updateManagementProgress, updatePasscodeSettings,
+  updateManagementProgress,
 } from '../../reducers';
 import { updateAuth } from '../../reducers/auth';
 import { selectSharedSettings } from '../../selectors/sharedState';
-import { destroySharedStatePort } from '../../shared/sharedStateConnector';
+import { destroySharedStatePort, resetSharedStatePort } from '../../shared/sharedStateConnector';
 
 let resetStoragePromise: Promise<boolean> | undefined;
 
+const API_DESTROY_TIMEOUT_MS = 3000;
+
 addActionHandler('initApi', (global, actions): ActionReturnType => {
+  if (global.passcode.isScreenLocked) return;
+
   const initialLocationHash = parseInitialLocationHash();
   const {
     shouldAllowHttpTransport,
@@ -189,16 +196,16 @@ addActionHandler('goToAuthQrCode', (global): ActionReturnType => {
   });
 });
 
-addActionHandler('saveSession', (global, actions, payload): ActionReturnType => {
+addActionHandler('saveSession', async (global, actions, payload): Promise<void> => {
   if (global.passcode.isScreenLocked) {
     return;
   }
 
   const { sessionData } = payload;
   if (sessionData) {
-    storeSession(sessionData);
+    await storeSession(sessionData);
   } else {
-    clearStoredSession();
+    await clearStoredSession();
   }
 });
 
@@ -210,7 +217,7 @@ addActionHandler('signOut', async (global, actions, payload): Promise<void> => {
     resetInitialLocationHash();
     resetLocationHash();
     await unsubscribe();
-    await Promise.race([callApi('destroy'), pause(3000)]);
+    await Promise.race([callApi('destroy'), pause(API_DESTROY_TIMEOUT_MS)]);
     await forceWebsync(false);
   } catch (err) {
     // Do nothing
@@ -242,10 +249,16 @@ addActionHandler('reset', async (global, actions): Promise<void> => {
   void cacheApi.clear(MEDIA_PROGRESSIVE_CACHE_NAME);
 
   const hasAccounts = await resetStorage();
-  destroySharedStatePort();
+  if (hasAccounts) {
+    destroySharedStatePort();
+  } else {
+    resetSharedStatePort();
+  }
 
   if (!hasAccounts) {
-    void clearWallpaperBlobs();
+    await clearPasscodeStore();
+    localStorage.removeItem(IS_SCREEN_LOCKED_CACHE_KEY);
+    await clearWallpaperBlobs();
   }
 
   const langCachePrefix = LANG_CACHE_NAME.replace(/\d+$/, '');
@@ -269,15 +282,18 @@ addActionHandler('reset', async (global, actions): Promise<void> => {
 function resetStorage() {
   if (resetStoragePromise) return resetStoragePromise;
 
-  clearStoredSession(ACCOUNT_SLOT);
-  const hasAccounts = Boolean(Object.values(getAccountsInfo()).length);
-  const clearSharedStatePromise = hasAccounts ? Promise.resolve() : removeSharedStateFromCache();
+  const clearSessionPromise = clearStoredSession(ACCOUNT_SLOT);
+  const clearGlobalsVaultPromise = requestPasscodeStateLock(() => removeGlobalsVaultForSlot(ACCOUNT_SLOT));
 
   resetStoragePromise = Promise.all([
-    clearEncryptedSession(),
+    clearSessionPromise,
+    clearGlobalsVaultPromise,
     removeGlobalFromCache(),
-    clearSharedStatePromise,
-  ]).then(() => hasAccounts).finally(() => {
+  ]).then(async () => {
+    const hasAccounts = Boolean(Object.values(getAccountsInfo()).length);
+    if (!hasAccounts) await removeSharedStateFromCache();
+    return hasAccounts;
+  }).finally(() => {
     resetStoragePromise = undefined;
   });
 
@@ -324,37 +340,28 @@ addActionHandler('deleteDeviceToken', (global): ActionReturnType => {
   };
 });
 
-addActionHandler('lockScreen', async (global): Promise<void> => {
-  const sessionJson = JSON.stringify({ ...loadStoredSession(), userId: global.currentUserId });
-  const globalJson = serializeGlobal(global);
-  const sharedStateJson = serializeShared(global.sharedState);
-
-  await encryptSession(sessionJson, globalJson, sharedStateJson);
-  forgetPasscode();
-  clearStoredSession();
-  updateAppBadge(0);
-
-  global = getGlobal();
-  global = updatePasscodeSettings(
-    global,
-    {
-      isScreenLocked: true,
-      invalidAttemptsCount: 0,
-      timeoutUntil: undefined,
-    },
-  );
-  setGlobal(global);
-
-  setTimeout(() => {
-    global = getGlobal();
-    global = clearGlobalForLockScreen(global);
-    setGlobal(global);
-  }, LOCK_SCREEN_ANIMATION_DURATION_MS);
-
+addActionHandler('signOutAllAccounts', async (): Promise<void> => {
   try {
-    await unsubscribe();
-    await callApi('destroy', true);
+    await Promise.race([unsubscribe(), pause(API_DESTROY_TIMEOUT_MS)]);
+    await Promise.race([callApi('destroy'), pause(API_DESTROY_TIMEOUT_MS)]);
   } catch (err) {
     // Do nothing
   }
+
+  clearAllStoredSessions();
+  await clearPasscodeStore().catch(() => undefined);
+
+  try {
+    localStorage.clear();
+    await MAIN_IDB_STORE.clear();
+    if ('caches' in window) {
+      const cacheKeys = await caches.keys();
+      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    }
+  } catch (err) {
+    // Do nothing
+  }
+
+  broadcastPasscodeReset();
+  window.location.reload();
 });

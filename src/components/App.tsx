@@ -17,7 +17,7 @@ import { IS_INSTALL_PROMPT_SUPPORTED, PLATFORM_ENV } from '../util/browser/windo
 import buildClassName from '../util/buildClassName';
 import { setupBeforeInstallPrompt } from '../util/installPrompt';
 import { ACCOUNT_SLOT, getAccountSlotUrl, getFirstLoggedInAccountSlot } from '../util/multiaccount';
-import { hasEncryptedSession } from '../util/passcode';
+import { hasLegacyEncryptedSession } from '../util/passcode';
 import { getInitialLocationHash, parseInitialLocationHash } from '../util/routing';
 import { checkSessionLocked, hasStoredSession } from '../util/sessions';
 import { getActionMessageBg, getWallpaperBaseColor } from '../util/wallpaper';
@@ -97,14 +97,11 @@ const App = ({
       }
     }
 
-    // TODO[Passcode]: Remove when multiacc passcode is implemented
-    const checkMultiaccPasscode = async () => {
-      if (checkSessionLocked() && ACCOUNT_SLOT && await hasEncryptedSession()) {
-        const url = getAccountSlotUrl(1);
-        window.location.href = url;
-      }
-    };
-    checkMultiaccPasscode();
+    if (checkSessionLocked() && ACCOUNT_SLOT) {
+      void hasLegacyEncryptedSession().then((hasLegacySession) => {
+        if (hasLegacySession) window.location.href = getAccountSlotUrl(1);
+      }).catch(() => undefined);
+    }
   }, []);
 
   // Prevent drop on elements that do not accept it

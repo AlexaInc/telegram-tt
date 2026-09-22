@@ -125,6 +125,8 @@ export const IS_VIEW_TRANSITION_SUPPORTED = CSS.supports('view-transition-class:
   && !IS_FIREFOX; // https://bugzilla.mozilla.org/show_bug.cgi?id=1994547
 export const IS_WEBAUTHN_SUPPORTED = navigator.credentials && window.PublicKeyCredential
   && 'parseCreationOptionsFromJSON' in PublicKeyCredential;
+export const IS_WEBAUTHN_SIGNAL_API_SUPPORTED = IS_WEBAUTHN_SUPPORTED
+  && 'signalUnknownCredential' in PublicKeyCredential;
 
 export const MESSAGE_LIST_SENSITIVE_AREA = 750;
 

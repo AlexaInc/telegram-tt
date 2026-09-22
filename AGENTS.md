@@ -89,8 +89,8 @@ You are an expert in TypeScript, JavaScript, HTML, SCSS and Teact with deep expe
   - Add new translations to `src/assets/localization/fallback.strings`.
 
 - **After your solution:**
-  1. Think like on a code review and identify any shortcomings.
-  2. Fix those issues. Repeat review-fix cycle until you are sure about code quality.
+  1. Think like on a code review and identify any shortcomings. Optimize for the smallest coherent design that satisfies requirements.
+  2. Fix those issues. Repeat review-fix cycle until you have no big findings.
   3. Present the improved result.
 
 - **When deeper debugging is needed:**

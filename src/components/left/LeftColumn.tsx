@@ -237,6 +237,8 @@ function LeftColumn({
           return;
 
         case SettingsScreens.PasscodeChangePasscodeCurrent:
+        case SettingsScreens.PasscodePasskeyAddConfirm:
+        case SettingsScreens.PasscodePasskeyRemoveConfirm:
         case SettingsScreens.PasscodeTurnOff:
           openSettingsScreen({ screen: SettingsScreens.PasscodeEnabled });
           return;

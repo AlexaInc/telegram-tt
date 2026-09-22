@@ -206,6 +206,8 @@ const SettingsHeader: FC<OwnProps> = ({
       case SettingsScreens.PasscodeEnabled:
       case SettingsScreens.PasscodeNewPasscode:
       case SettingsScreens.PasscodeNewPasscodeConfirm:
+      case SettingsScreens.PasscodePasskeyAddConfirm:
+      case SettingsScreens.PasscodePasskeyRemoveConfirm:
       case SettingsScreens.PasscodeCongratulations:
         return <h3>{oldLang('Passcode')}</h3>;
 

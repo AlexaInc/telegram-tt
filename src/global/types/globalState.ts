@@ -152,10 +152,12 @@ export type GlobalState = {
   passcode: {
     isScreenLocked?: boolean;
     hasPasscode?: boolean;
-    error?: string;
+    hasPasskey?: boolean;
+    autolockDuration?: number;
+    isDataCorrupted?: boolean;
+    errorKey?: RegularLangFnParameters;
     timeoutUntil?: number;
     invalidAttemptsCount?: number;
-    invalidAttemptError?: string;
     isLoading?: boolean;
   };
 

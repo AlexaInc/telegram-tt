@@ -1,25 +1,23 @@
 import type { SharedState } from '../types';
-import type { WorkerBoundMessageEvent } from './sharedStateConnector';
+import type { ClientBoundMessageEvent, WorkerBoundMessageEvent } from './sharedWorker';
 
 import { deepFreeze } from '../../util/data/freeze';
-import { deepDiff, type DiffObject } from '../../util/deepDiff';
+import { deepDiff } from '../../util/deepDiff';
 import { deepMerge } from '../../util/deepMerge';
 
 declare const self: SharedWorkerGlobalScope;
 
-interface StateUpdateEvent {
-  type: 'stateUpdate';
-  update: DiffObject<SharedState>;
-}
+const PASSCODE_NAVIGATION_DEK_LIFETIME_MS = 8000;
 
-interface FullStateEvent {
-  type: 'fullState';
-  state: SharedState;
-}
-
-export type ClientBoundMessageEvent = StateUpdateEvent | FullStateEvent;
+type PasscodeNavigationDek = {
+  dek: ArrayBuffer;
+  expiresAt: number;
+  generation: string;
+};
 
 let state: SharedState | undefined;
+let passcodeNavigationDek: PasscodeNavigationDek | undefined;
+let clearPasscodeNavigationDekTimeout: number | undefined;
 
 const ports: MessagePort[] = [];
 
@@ -53,9 +51,67 @@ self.onconnect = (e: MessageEvent) => {
         }
         break;
       }
+
+      case 'retainPasscodeNavigationDek': {
+        retainPasscodeNavigationDek(data.dek, data.generation);
+        break;
+      }
+
+      case 'requestPasscodeNavigationDek': {
+        sendToClient(port, {
+          type: 'passcodeNavigationDek',
+          dek: getPasscodeNavigationDek(data.generation),
+          generation: data.generation,
+        });
+        break;
+      }
+
+      case 'clearPasscodeNavigationDek': {
+        clearPasscodeNavigationDek(data.generation);
+        break;
+      }
+
+      case 'resetSharedState': {
+        state = undefined;
+        break;
+      }
     }
   };
 };
+
+function retainPasscodeNavigationDek(dek: ArrayBuffer, generation: string) {
+  clearPasscodeNavigationDek();
+  passcodeNavigationDek = {
+    dek,
+    expiresAt: Date.now() + PASSCODE_NAVIGATION_DEK_LIFETIME_MS,
+    generation,
+  };
+  clearPasscodeNavigationDekTimeout = self.setTimeout(
+    clearPasscodeNavigationDek,
+    PASSCODE_NAVIGATION_DEK_LIFETIME_MS,
+  );
+}
+
+function getPasscodeNavigationDek(generation: string) {
+  if (!passcodeNavigationDek) return undefined;
+  if (passcodeNavigationDek.expiresAt <= Date.now()) {
+    clearPasscodeNavigationDek();
+    return undefined;
+  }
+  if (passcodeNavigationDek.generation !== generation) return undefined;
+
+  return passcodeNavigationDek.dek;
+}
+
+function clearPasscodeNavigationDek(generation?: string) {
+  if (generation && passcodeNavigationDek?.generation !== generation) return;
+
+  passcodeNavigationDek = undefined;
+  if (clearPasscodeNavigationDekTimeout !== undefined) {
+    self.clearTimeout(clearPasscodeNavigationDekTimeout);
+    clearPasscodeNavigationDekTimeout = undefined;
+  }
+}
 
 function sendToClient(port: MessagePort, message: ClientBoundMessageEvent) {
   port.postMessage(message);

@@ -122,6 +122,7 @@ import type {
 import type { BrowserModalStateType, BrowserTab } from '../../types/browser';
 import type { ClipboardTextFormat, MessageCopyRequest } from '../../types/messageCopy';
 import type { WebApp, WebAppOutboundEvent } from '../../types/webapp';
+import type { RegularLangFnParameters } from '../../util/localization';
 import type { DownloadableMedia } from '../helpers';
 import type { SharedState } from './sharedState';
 import type { ReactionDeletionContext, TabState } from './tabState';
@@ -2690,14 +2691,19 @@ export interface ActionPayloads {
   setPasscode: { passcode: string } & WithTabId;
   clearPasscode: undefined;
   lockScreen: undefined;
-  unlockScreen: { sessionJson: string; globalJson: string; sharedStateJson?: string };
+  unlockScreen: { passcode: string };
+  unlockScreenWithPasskey: { isConditional?: boolean } | undefined;
+  setPasscodeKeepBackground: { shouldKeep: boolean };
+  setPasscodeAutolockDuration: { duration?: number };
+  setupUnlockPasskey: { passcode: string } & WithTabId;
+  removeUnlockPasskey: { passcode: string } & WithTabId;
+  signOutAllAccounts: undefined;
+  onPasscodeStateChangedRemotely: { dek?: ArrayBuffer; generation?: string };
+  onPasscodeSessionsChanged: { generation: string };
   softSignIn: undefined;
-  logInvalidUnlockAttempt: undefined;
-  resetInvalidUnlockAttempts: undefined;
-  setPasscodeError: { error: string };
+  resetInvalidUnlockAttempts: { timeoutUntil: number };
+  setPasscodeError: { errorKey: RegularLangFnParameters };
   clearPasscodeError: undefined;
-  skipLockOnUnload: undefined;
-
   // Settings
   updateShouldDebugExportedSenders: undefined;
   updateShouldEnableDebugLog: undefined;

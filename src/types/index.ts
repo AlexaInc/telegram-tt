@@ -284,6 +284,8 @@ export enum SettingsScreens {
   PasscodeChangePasscodeCurrent,
   PasscodeChangePasscodeNew,
   PasscodeChangePasscodeConfirm,
+  PasscodePasskeyAddConfirm,
+  PasscodePasskeyRemoveConfirm,
   PasscodeTurnOff,
   PasscodeCongratulations,
   Experimental,

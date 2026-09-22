@@ -20,7 +20,12 @@ import { requestGlobal, subscribeToMultitabBroadcastChannel } from './util/brows
 import { establishMultitabRole, subscribeToMasterChange } from './util/establishMultitabRole';
 import { initGlobal } from './util/init';
 import { initLocalization } from './util/localization';
+import { Bundles, loadBundle } from './util/moduleLoader';
 import { MULTITAB_STORAGE_KEY } from './util/multiaccount';
+import { getDek, getDekGeneration } from './util/passcode';
+import { initAutolock } from './util/passcode/autolock';
+import { subscribeToPasscodeChannel } from './util/passcode/channel';
+import { initPasscodeNavigation } from './util/passcode/navigation';
 import { checkAndAssignPermanentWebVersion } from './util/permanentWebVersion';
 import { onBeforeUnload } from './util/schedulers';
 import initTauriApi from './util/tauri/initTauriApi';
@@ -41,7 +46,7 @@ if (IS_TAURI) {
   setupTauriListeners();
 }
 
-init();
+const initializationPromise = init();
 
 async function init() {
   if (DEBUG) {
@@ -55,6 +60,8 @@ async function init() {
   listenOtherClients();
 
   subscribeToMultitabBroadcastChannel();
+  subscribeToPasscodeChannel(loadPasscodeActions);
+  initPasscodeNavigation(getDek, getDekGeneration);
   await requestGlobal(APP_VERSION);
   localStorage.setItem(MULTITAB_STORAGE_KEY, '1');
   onBeforeUnload(() => {
@@ -66,6 +73,8 @@ async function init() {
 
   await initGlobal();
   getActions().init();
+
+  initAutolock();
 
   getActions().updateShouldEnableDebugLog();
   getActions().updateShouldDebugExportedSenders();
@@ -121,6 +130,11 @@ async function init() {
       }
     });
   }
+}
+
+async function loadPasscodeActions() {
+  await Promise.all([loadBundle(Bundles.Main), initializationPromise]);
+  return getActions();
 }
 
 onBeforeUnload(() => {

@@ -19,7 +19,7 @@ import {
 } from '../../api/gramjs';
 import { deepDiff } from '../deepDiff';
 import { deepMerge } from '../deepMerge';
-import { getCurrentTabId, signalPasscodeHash, subscribeToTokenDied } from '../establishMultitabRole';
+import { getCurrentTabId, subscribeToTokenDied } from '../establishMultitabRole';
 import { omit } from '../iteratees';
 import { DATA_BROADCAST_CHANNEL_NAME, MULTITAB_STORAGE_KEY } from '../multiaccount';
 
@@ -217,6 +217,8 @@ export function handleMessage({ data }: { data: BroadcastChannelMessage }) {
 
   switch (data.type) {
     case 'initApi': {
+      if (!isFirstGlobalResolved) return;
+
       const global = getGlobal();
       if (!selectTabState(global).isMasterTab) return;
 
@@ -273,8 +275,6 @@ export function handleMessage({ data }: { data: BroadcastChannelMessage }) {
         type: 'globalUpdate',
         global,
       });
-
-      signalPasscodeHash();
       break;
     }
 

@@ -12,7 +12,7 @@ import {
   MUTE_INDEFINITE_TIMESTAMP,
   UNMUTE_TIMESTAMP,
 } from '../../../config';
-import { toCredentialCreationOptions } from '../../../util/browser/passkeys';
+import { signalUnknownPasskey, toCredentialCreationOptions } from '../../../util/browser/passkeys';
 import { getCurrentTabId } from '../../../util/establishMultitabRole';
 import { buildCollectionByKey } from '../../../util/iteratees';
 import { requestPermission, subscribe, unsubscribe } from '../../../util/notifications';
@@ -1062,7 +1062,8 @@ addActionHandler('deletePasskey', async (global, actions, payload): Promise<void
     setGlobal(global);
   }
 
-  await callApi('deletePasskey', { id });
+  const isDeleted = await callApi('deletePasskey', { id });
+  if (isDeleted) signalUnknownPasskey(id);
 
   actions.loadPasskeys();
 });

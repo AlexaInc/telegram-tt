@@ -219,7 +219,7 @@ export function addUnreadCountersCallback(callback: (unreadCounters: typeof resu
 
 /* Global update handlers */
 
-function updateFolderManager(global: GlobalState) {
+export function updateFolderManager(global: GlobalState) {
   let DEBUG_startedAt: number;
   if (DEBUG) {
     DEBUG_startedAt = performance.now();

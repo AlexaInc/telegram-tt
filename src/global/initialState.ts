@@ -113,6 +113,7 @@ export const INITIAL_SHARED_STATE: SharedState = {
     canDisplayChatInTitle: true,
     shouldAllowHttpTransport: true,
     shouldWarnAboutFiles: true,
+    shouldKeepLockScreenBackground: true,
   },
   isInitial: true,
 };

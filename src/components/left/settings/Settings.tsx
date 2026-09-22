@@ -478,6 +478,8 @@ const Settings: FC<OwnProps> = ({
       case SettingsScreens.PasscodeChangePasscodeCurrent:
       case SettingsScreens.PasscodeChangePasscodeNew:
       case SettingsScreens.PasscodeChangePasscodeConfirm:
+      case SettingsScreens.PasscodePasskeyAddConfirm:
+      case SettingsScreens.PasscodePasskeyRemoveConfirm:
       case SettingsScreens.PasscodeCongratulations:
       case SettingsScreens.PasscodeEnabled:
       case SettingsScreens.PasscodeTurnOff:

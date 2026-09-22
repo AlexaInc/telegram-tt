@@ -93,7 +93,7 @@ const SettingsPrivacyBlockedUsers: FC<OwnProps & StateProps> = ({
         narrow
         contextActions={[{
           title: 'Unblock',
-          icon: 'unlock',
+          icon: 'lock-crossed',
           handler: () => {
             handleUnblockClick(contactId);
           },

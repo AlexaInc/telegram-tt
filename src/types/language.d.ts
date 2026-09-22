@@ -1243,9 +1243,30 @@ export interface LangPair {
   'SettingsFolderCreate': undefined;
   'SettingsFoldersEmpty': undefined;
   'SettingsPasscodeSuccess': undefined;
-  'SettingsPasscodeEnabled': undefined;
   'SettingsPasscodeStart1': undefined;
   'SettingsPasscodeStart2': undefined;
+  'PasscodeTooManyAttempts': undefined;
+  'PasscodeUsePasskey': undefined;
+  'PasscodePasskeyTitle': undefined;
+  'PasscodePasskeyName': undefined;
+  'PasscodePasskeyEnable': undefined;
+  'PasscodePasskeyDescription': undefined;
+  'PasscodePasskeyError': undefined;
+  'PasscodePasskeyUnsupported': undefined;
+  'PasscodePasskeyRemovedChange': undefined;
+  'PasscodeLockScreenTitle': undefined;
+  'PasscodeKeepBackground': undefined;
+  'PasscodeKeepBackgroundInfo': undefined;
+  'PasscodeAutoLockTitle': undefined;
+  'PasscodeAutoLockDisabled': undefined;
+  'PasscodeAutoLock1Min': undefined;
+  'PasscodeAutoLock5Min': undefined;
+  'PasscodeAutoLock30Min': undefined;
+  'PasscodeAutoLock1Hour': undefined;
+  'PasscodeDataCorrupted': undefined;
+  'PasscodeLogOutAllAccounts': undefined;
+  'PasscodeLogOutAllConfirm': undefined;
+  'PasscodeForgotHelpLink': undefined;
   'CurrentPasswordPlaceholder': undefined;
   'ChangeYourProfilePicture': undefined;
   'AppInactiveOtherClientTitle': undefined;
@@ -1448,6 +1469,7 @@ export interface LangPair {
   'MenuReportBug': undefined;
   'MenuBetaChangelog': undefined;
   'MenuSwitchToK': undefined;
+  'PasscodeSwitchToKInfo': undefined;
   'MenuInstallApp': undefined;
   'MenuMyProfile': undefined;
   'MenuSavedMessages': undefined;
@@ -2805,6 +2827,9 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'AtDateAgo': {
     'date': V;
+  };
+  'PasscodeForgotHelp': {
+    'logOut': V;
   };
   'MediaViewDownloading': {
     'count': V;
