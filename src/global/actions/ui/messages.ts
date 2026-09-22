@@ -781,7 +781,7 @@ addTabStateResetterAction('closePollModal', 'pollModal');
 
 addActionHandler('openTodoListModal', (global, actions, payload): ActionReturnType => {
   const {
-    chatId, messageId, forNewTask, tabId = getCurrentTabId(),
+    chatId, messageId, forNewTask, initialCheckList, tabId = getCurrentTabId(),
   } = payload;
   const currentMessageList = selectCurrentMessageList(global, tabId);
   if (!messageId && currentMessageList?.chatId === chatId) {
@@ -794,6 +794,7 @@ addActionHandler('openTodoListModal', (global, actions, payload): ActionReturnTy
       chatId,
       messageId,
       forNewTask,
+      initialCheckList,
     },
   }, tabId);
 });

@@ -148,6 +148,7 @@ import buildAttachment, {
   buildGifAttachment,
   prepareAttachmentsToSend,
 } from '../middle/composer/helpers/buildAttachment';
+import { parseCheckList } from '../middle/composer/helpers/parseCheckList';
 import { armSendCollapseReserve } from '../middle/helpers/messageListReserves';
 import {
   buildRichMessageFromFormatted,
@@ -348,6 +349,11 @@ enum MainButtonState {
   Forward = 'forward',
   SendOneTime = 'sendOneTime',
 }
+
+type ConvertedCheckListSource = {
+  chatId: string;
+  threadId: ThreadId;
+};
 
 type ScheduledMessageArgs = TabState['contentToBeScheduled'] | {
   id: string; queryId: string; isSilent?: boolean;
@@ -1628,7 +1634,14 @@ const Composer = ({
       return;
     }
 
-    openTodoListModal({ chatId });
+    const { todoItemsMax, todoTitleLengthMax, todoItemLengthMax } = getGlobal().appConfig;
+    const initialCheckList = parseCheckList(richEditor.getValue(), {
+      maxItemsCount: todoItemsMax,
+      maxTitleLength: todoTitleLengthMax,
+      maxItemLength: todoItemLengthMax,
+    });
+
+    openTodoListModal({ chatId, initialCheckList });
   });
 
   const handleOpenRichInput = useLastCallback(() => {
@@ -1991,22 +2004,57 @@ const Composer = ({
       return;
     }
 
+    const convertedSource = todoListModal?.initialCheckList ? { chatId, threadId } : undefined;
+
     if (isInScheduledList) {
       requestMessageSchedule((scheduledAt, scheduleRepeatPeriod) => {
         handleActionWithPaymentConfirmation(
-          handleMessageSchedule,
+          scheduleTodoList,
           { todo },
           scheduledAt,
           scheduleRepeatPeriod,
           currentMessageList,
+          convertedSource,
         );
       });
     } else {
       handleActionWithPaymentConfirmation(
-        sendMessage,
+        sendTodoList,
         { messageList: currentMessageList, todo, isSilent: isSilentPosting },
+        convertedSource,
       );
     }
+  });
+
+  const sendTodoList = useLastCallback((
+    params: { messageList: MessageList; todo: ApiNewMediaTodo; isSilent?: boolean },
+    convertedSource?: ConvertedCheckListSource,
+  ) => {
+    sendMessage(params);
+    if (convertedSource) clearConvertedDraft(convertedSource);
+  });
+
+  const scheduleTodoList = useLastCallback((
+    args: ScheduledMessageArgs,
+    scheduledAt: number,
+    scheduleRepeatPeriod: number | undefined,
+    messageList: MessageList,
+    convertedSource?: ConvertedCheckListSource,
+  ) => {
+    handleMessageSchedule(args, scheduledAt, scheduleRepeatPeriod, messageList);
+    if (convertedSource) clearConvertedDraft(convertedSource);
+  });
+
+  const clearConvertedDraft = useLastCallback((source: ConvertedCheckListSource) => {
+    clearDraft({ chatId: source.chatId, threadId: source.threadId, isLocalOnly: true });
+
+    if (source.chatId !== chatId || source.threadId !== threadId) {
+      return;
+    }
+
+    requestMeasure(() => {
+      resetComposer(false, isPaidSendDeferred);
+    });
   });
 
   const sendSilent = useLastCallback((additionalArgs?: ScheduledMessageArgs) => {
@@ -2608,11 +2656,13 @@ const Composer = ({
         canScheduleUntilOnline={canSchedule && canScheduleUntilOnline && !isViewOnceEnabled}
         paidMessagesStars={paidMessagesStars}
       />
-      <ToDoListModal
-        modal={todoListModal}
-        onClear={closeTodoListModal}
-        onSend={handleToDoListSend}
-      />
+      {isForCurrentMessageList && (
+        <ToDoListModal
+          modal={todoListModal}
+          onClear={closeTodoListModal}
+          onSend={handleToDoListSend}
+        />
+      )}
       <SendAsMenu
         isOpen={isSendAsMenuOpen}
         onClose={closeSendAsMenu}

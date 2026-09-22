@@ -88,6 +88,8 @@ const ToDoListModal = ({
     }));
   }, [isAddTaskMode, editingTodo]);
 
+  const parsedCheckList = editingMessage ? undefined : renderingModal?.initialCheckList;
+
   const focusInput = useLastCallback((ref: ElementRef<HTMLInputElement>) => {
     if (isOpen && ref.current) {
       ref.current.focus();
@@ -111,6 +113,23 @@ const ToDoListModal = ({
       }
     }
   }, [editingTodo, isAddTaskMode, maxItemsCount]);
+
+  useLayoutEffect(() => {
+    if (!isOpen || !parsedCheckList) {
+      return;
+    }
+
+    setTitle(parsedCheckList.title || '');
+
+    const parsedItems = parsedCheckList.items.map((text) => ({
+      id: generateUniqueNumberId(),
+      text,
+    }));
+    if (parsedItems.length < maxItemsCount) {
+      parsedItems.push({ id: generateUniqueNumberId(), text: '' });
+    }
+    setItems(parsedItems);
+  }, [isOpen, maxItemsCount, parsedCheckList]);
 
   useEffect(() => (isOpen ? captureEscKeyListener(onClear) : undefined), [isOpen, onClear]);
   useEffect(() => {
