@@ -2719,6 +2719,8 @@
 "HintTodoListTasksCount2_other" = "You can add {count} more tasks";
 "ToDoListErrorChooseTitle" = "Please enter a title.";
 "ToDoListErrorChooseTasks" = "Please enter at least one task.";
+"ToDoListTasksLimitReached" = "Maximum number of tasks reached.";
+"ToDoListTasksTitle" = "Tasks";
 "GiftInfoCollectibleBy" = "Collectible #{number} by **{owner}**";
 "PremiumPreviewTodo" = "Checklists";
 "PremiumPreviewAiTools" = "AI Tools";

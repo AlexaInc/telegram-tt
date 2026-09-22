@@ -2008,6 +2008,8 @@ export interface LangPair {
   'SubscribeToTelegramPremiumForAppendToDo': undefined;
   'ToDoListErrorChooseTitle': undefined;
   'ToDoListErrorChooseTasks': undefined;
+  'ToDoListTasksLimitReached': undefined;
+  'ToDoListTasksTitle': undefined;
   'PremiumPreviewTodo': undefined;
   'PremiumPreviewAiTools': undefined;
   'PremiumPreviewAiToolsDescription': undefined;
