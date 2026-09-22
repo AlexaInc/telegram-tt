@@ -138,6 +138,7 @@ import {
   selectChatFullInfo,
   selectChatLastMessageId,
   selectChatMessage,
+  selectChatMessageOrEphemeral,
   selectChatMessages,
   selectCurrentChat,
   selectCurrentMessageList,
@@ -2040,7 +2041,7 @@ async function executeForwardMessages(global: GlobalState, sendParams: SendMessa
   const messages = fromChatId && messageIds
     ? messageIds
       .sort((a, b) => a - b)
-      .map((id) => selectChatMessage(global, fromChatId, id)).filter(Boolean)
+      .map((id) => selectChatMessageOrEphemeral(global, fromChatId, id)).filter(Boolean)
     : undefined;
 
   if (!fromChat || !toChat || !messages || (toThreadId && !isToMainThread && !toChat.isForum)) {
@@ -2055,10 +2056,13 @@ async function executeForwardMessages(global: GlobalState, sendParams: SendMessa
 
   const [realMessages, serviceMessages] = partition(messages, (m) => !isServiceNotificationMessage(m));
   const forwardableRealMessages = realMessages.filter((message) => selectCanForwardMessage(global, message));
-  if (forwardableRealMessages.length) {
+  const [ephemeralMessages, regularMessages] = partition(forwardableRealMessages, (message) => message.isEphemeral);
+  for (const messagesToForward of [regularMessages, ephemeralMessages]) {
+    if (!messagesToForward.length) continue;
+
     const messageSlices = global.config?.maxForwardedCount
-      ? splitMessagesForForwarding(forwardableRealMessages, global.config.maxForwardedCount)
-      : [forwardableRealMessages];
+      ? splitMessagesForForwarding(messagesToForward, global.config.maxForwardedCount)
+      : [messagesToForward];
     for (const slice of messageSlices) {
       const forwardParams: ForwardMessagesParams = {
         fromChat,
@@ -3295,29 +3299,34 @@ function forwardMessagesToChat({
   }
 
   if (realMessages.length) {
-    const messageSlices = global.config?.maxForwardedCount
-      ? splitMessagesForForwarding(realMessages, global.config.maxForwardedCount)
-      : [realMessages];
+    const [ephemeralMessages, regularMessages] = partition(realMessages, (message) => message.isEphemeral);
+    const messageGroups = [regularMessages, ephemeralMessages].filter((messages) => messages.length);
 
-    for (const slice of messageSlices) {
-      const forwardParams: ForwardMessagesParams = {
-        fromChat,
-        toChat,
-        toThreadId,
-        messages: slice,
-        isSilent: true,
-        sendAs,
-        withMyScore,
-        noAuthors,
-        noCaptions,
-        privateForwardName,
-        isCurrentUserPremium,
-        wasDrafted: false,
-        lastMessageId,
-        messagePriceInStars,
-      };
+    for (const messagesToForward of messageGroups) {
+      const messageSlices = global.config?.maxForwardedCount
+        ? splitMessagesForForwarding(messagesToForward, global.config.maxForwardedCount)
+        : [messagesToForward];
 
-      callApi('forwardMessages', forwardParams);
+      for (const slice of messageSlices) {
+        const forwardParams: ForwardMessagesParams = {
+          fromChat,
+          toChat,
+          toThreadId,
+          messages: slice,
+          isSilent: true,
+          sendAs,
+          withMyScore,
+          noAuthors,
+          noCaptions,
+          privateForwardName,
+          isCurrentUserPremium,
+          wasDrafted: false,
+          lastMessageId,
+          messagePriceInStars,
+        };
+
+        callApi('forwardMessages', forwardParams);
+      }
     }
   }
 
@@ -3352,7 +3361,7 @@ addActionHandler('forwardToMultipleChats', (global, actions, payload): ActionRet
   const messages = fromChatId && messageIds
     ? messageIds
       .sort((a, b) => a - b)
-      .map((id) => selectChatMessage(global, fromChatId, id)).filter(Boolean)
+      .map((id) => selectChatMessageOrEphemeral(global, fromChatId, id)).filter(Boolean)
     : undefined;
 
   if (!fromChat || !messages?.length) {

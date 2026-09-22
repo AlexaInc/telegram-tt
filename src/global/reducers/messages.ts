@@ -198,6 +198,13 @@ export function deleteEphemeralMessages<T extends GlobalState>(
   });
 }
 
+export function clearEphemeralMessages<T extends GlobalState>(global: T, chatId: string): T {
+  const ephemeralById = global.messages.byChatId[chatId]?.ephemeralById;
+  if (!ephemeralById || !Object.keys(ephemeralById).length) return global;
+
+  return updateMessageStore(global, chatId, { ephemeralById: {} });
+}
+
 export function addMessages<T extends GlobalState>(
   global: T, messages: ApiMessage[],
 ): T {

@@ -198,6 +198,8 @@ const BOTTOM_SNAP_THRESHOLD = 7;
 const UNREAD_DIVIDER_TOP = 10;
 const SCROLL_DEBOUNCE = 200;
 const MESSAGE_ANIMATION_DURATION = 500;
+// Keep join message above real ones
+const CHANNEL_JOIN_MESSAGE_ID = 0.01;
 const MIN_SEND_COLLAPSE_REVEAL_SHIFT = 1;
 const SEND_FOCUS_DURATION = SCROLL_MAX_DURATION + ANIMATION_END_DELAY;
 const BOTTOM_FOCUS_MARGIN = 0.5 * REM;
@@ -527,9 +529,8 @@ const MessageList = ({
       }
 
       if (shouldAppendJoinMessage) {
-        const lastMessageId = shouldAppendJoinMessageAfterCurrent ? message.id : (prevMessage?.id || (message.id - 1));
         listedMessages.push({
-          id: generateChannelJoinMessageId(lastMessageId),
+          id: CHANNEL_JOIN_MESSAGE_ID,
           chatId: message.chatId,
           date: channelJoinInfo!.joinedDate,
           isOutgoing: false,
@@ -1568,8 +1569,4 @@ function getAddedMessageInfo(
       : undefined,
     previousLastCurrentMessageId,
   };
-}
-
-function generateChannelJoinMessageId(lastMessageId: number) {
-  return lastMessageId + 10e-7; // Smaller than smallest possible id with `getNextLocalMessageId`
 }

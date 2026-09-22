@@ -138,6 +138,8 @@ export function updater(update: Update) {
     || update instanceof GramJs.UpdateEditEphemeralMessage
   ) {
     const ephemeralMessage = update.message;
+    if (ephemeralMessage.welcomeTemplate) return;
+
     const { media, replyMarkup } = ephemeralMessage;
     const message = buildApiEphemeralMessage(ephemeralMessage);
     const webPages = media ? buildWebPagesFromMedia(media) : undefined;

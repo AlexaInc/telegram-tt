@@ -13,6 +13,7 @@ import {
   selectCanAnimateInterface,
   selectChat,
   selectChatMessage,
+  selectChatMessageOrEphemeral,
   selectEditingMessage,
   selectEphemeralMessage,
   selectForwardedSender,
@@ -136,7 +137,8 @@ const ComposerEmbeddedMessage = (props: OwnProps & StateProps) => {
 
   const forwardSenders = useMemo(() => {
     if (!isForwarding) return undefined;
-    const forwardedMessages = forwardMessageIds?.map((id) => selectChatMessage(getGlobal(), fromChatId!, id))
+    const forwardedMessages = forwardMessageIds
+      ?.map((id) => selectChatMessageOrEphemeral(getGlobal(), fromChatId!, id))
       .filter(Boolean);
     const senders = forwardedMessages?.map((m) => selectSenderFromForwardedMessage(m)).filter(Boolean);
     return senders ? unique(senders) : undefined;
@@ -506,7 +508,9 @@ export default memo(withGlobal<OwnProps>(
       : selectEditingId(global, chatId, threadId);
     const shouldAnimate = selectCanAnimateInterface(global) && !shouldPreventComposerAnimation;
     const isForwarding = toChatId === chatId;
-    const forwardedMessages = forwardMessageIds?.map((id) => selectChatMessage(global, fromChatId!, id)!);
+    const forwardedMessages = forwardMessageIds
+      ?.map((id) => selectChatMessageOrEphemeral(global, fromChatId!, id))
+      .filter(Boolean);
 
     const draft = selectDraft(global, chatId, threadId);
     const replyInfo = draft?.replyInfo;

@@ -1098,6 +1098,7 @@
 "EditAdminWhatCanDo" = "What can this admin do?";
 "EditAdminChangeChannelInfo" = "Change Channel Info";
 "EditAdminChangeGroupInfo" = "Change Group Info";
+"EditAdminManageWelcomeMessages" = "Manage Welcome Messages";
 "EditAdminPostMessages" = "Post Messages";
 "EditAdminEditMessages" = "Edit Messages of Others";
 "EditAdminDeleteMessages" = "Delete Messages of Others";

@@ -1,7 +1,8 @@
-import type { ApiChat, ApiKeyboardButton } from '../../api/types';
+import type { ApiChat, ApiKeyboardButton, ApiMessage } from '../../api/types';
 import type { SendMessageParams } from '../../types';
 import type { GlobalState } from '../types';
 
+import { isUserId } from '../../util/entities/ids';
 import { selectChatFullInfo, selectUser, selectUserFullInfo } from '../selectors';
 import { isChatGroup } from './chats';
 import { getMainUsername } from './users';
@@ -13,6 +14,15 @@ const UNSUPPORTED_EPHEMERAL_BUTTON_TYPES = new Set<ApiKeyboardButton['type']>([
   'requestPoll',
   'urlAuth',
 ]);
+
+export function getCanReplyToEphemeralMessage(message: ApiMessage) {
+  return Boolean(
+    message.isEphemeral
+    && !message.isOutgoing
+    && message.ephemeralBotId
+    && isUserId(message.ephemeralBotId),
+  );
+}
 
 export function isKeyboardButtonUnsupportedForEphemeral(button: ApiKeyboardButton) {
   return UNSUPPORTED_EPHEMERAL_BUTTON_TYPES.has(button.type);

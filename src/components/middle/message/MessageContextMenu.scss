@@ -114,6 +114,10 @@
   .poll-country-restriction-notice {
     min-width: 12rem;
   }
+
+  &.compact .smaller {
+    font-size: 0.75rem;
+  }
 }
 
 .translation-tone-menu .bubble {

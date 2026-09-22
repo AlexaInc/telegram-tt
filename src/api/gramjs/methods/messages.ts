@@ -2334,7 +2334,7 @@ export function forwardMessagesLocal(params: ForwardMessagesParams) {
 
 export async function forwardApiMessages(params: ForwardMessagesParams) {
   const {
-    fromChat, toChat, toThreadId, isSilent,
+    fromChat, toChat, toThreadId, messages, isSilent,
     scheduledAt, scheduleRepeatPeriod, sendAs, withMyScore, noAuthors, noCaptions,
     forwardedLocalMessagesSlice, messagePriceInStars, effectId,
   } = params;
@@ -2346,6 +2346,8 @@ export async function forwardApiMessages(params: ForwardMessagesParams) {
   } = forwardedLocalMessagesSlice;
 
   const priceInStars = messagePriceInStars ? messagePriceInStars * messageIds.length : undefined;
+  const isFromEphemeral = messages[0]?.isEphemeral;
+  const apiMessageIds = isFromEphemeral ? messageIds.map(getMtpEphemeralMessageId) : messageIds;
 
   const randomIds = messageIds.map(() => generateRandomBigInt());
   try {
@@ -2353,7 +2355,8 @@ export async function forwardApiMessages(params: ForwardMessagesParams) {
       fromPeer: buildInputPeer(fromChat.id, fromChat.accessHash),
       toPeer: buildInputPeer(toChat.id, toChat.accessHash),
       randomId: randomIds,
-      id: messageIds,
+      id: apiMessageIds,
+      fromEphemeral: isFromEphemeral || undefined,
       withMyScore: withMyScore || undefined,
       silent: isSilent || undefined,
       dropAuthor: noAuthors || undefined,

@@ -914,6 +914,7 @@ export interface LangPair {
   'EditAdminWhatCanDo': undefined;
   'EditAdminChangeChannelInfo': undefined;
   'EditAdminChangeGroupInfo': undefined;
+  'EditAdminManageWelcomeMessages': undefined;
   'EditAdminPostMessages': undefined;
   'EditAdminEditMessages': undefined;
   'EditAdminDeleteMessages': undefined;

@@ -51,6 +51,7 @@ import { EMOJI_STATUS_LOOP_LIMIT, MESSAGE_APPEARANCE_DELAY } from '../../../conf
 import {
   areReactionsEmpty,
   getAllowedAttachmentOptions,
+  getCanReplyToEphemeralMessage,
   getIsDownloading,
   getMainUsername,
   getMessageContent,
@@ -2320,7 +2321,7 @@ export default memo(withGlobal<OwnProps>(
       isAnonymousForwards,
       isChannel,
       isGroup,
-      canReply: message.isEphemeral ? !message.isOutgoing : canReply,
+      canReply: message.isEphemeral ? getCanReplyToEphemeralMessage(message) : canReply,
       highlight,
       animatedEmoji,
       animatedCustomEmoji,

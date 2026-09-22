@@ -267,6 +267,12 @@ export function selectEphemeralMessage<T extends GlobalState>(global: T, chatId:
   return ephemeralById?.[messageId];
 }
 
+export function selectChatMessageOrEphemeral<T extends GlobalState>(
+  global: T, chatId: string, messageId: number,
+) {
+  return selectChatMessage(global, chatId, messageId) || selectEphemeralMessage(global, chatId, messageId);
+}
+
 export function selectScheduledMessage<T extends GlobalState>(global: T, chatId: string, messageId: number) {
   const chatMessages = selectChatScheduledMessages(global, chatId);
 
@@ -513,8 +519,6 @@ export function selectCanReplyToMessage<T extends GlobalState>(global: T, messag
 }
 
 export function selectCanForwardMessage<T extends GlobalState>(global: T, message: ApiMessage) {
-  if (message.isEphemeral) return false;
-
   const isLocal = isMessageLocal(message);
   const isServiceNotification = isServiceNotificationMessage(message);
   const isAction = isActionMessage(message);
@@ -1247,10 +1251,8 @@ export function selectCanForwardMessages<T extends GlobalState>(global: T, chatI
     return false;
   }
 
-  const messages = selectChatMessages(global, chatId);
-
   return messageIds
-    .map((id) => messages[id])
+    .map((id) => selectChatMessageOrEphemeral(global, chatId, id))
     .every((message) => message && selectCanForwardMessage(global, message));
 }
 
@@ -1394,9 +1396,9 @@ export function selectForwardsContainVoiceMessages<T extends GlobalState>(
 ) {
   const { messageIds, fromChatId } = selectTabState(global, tabId).forwardMessages;
   if (!messageIds) return false;
-  const chatMessages = selectChatMessages(global, fromChatId!);
   return messageIds.some((messageId) => {
-    const message = chatMessages[messageId];
+    const message = selectChatMessageOrEphemeral(global, fromChatId!, messageId);
+    if (!message) return false;
     return Boolean(message.content.voice) || Boolean(message.content.video?.isRound);
   });
 }
@@ -1478,12 +1480,13 @@ export function selectForwardsCanBeSentToChat<T extends GlobalState>(
   }
 
   const chatFullInfo = selectChatFullInfo(global, toChatId);
-  const chatMessages = selectChatMessages(global, fromChatId!);
-
   const isSavedMessages = toChatId ? selectIsChatWithSelf(global, toChatId) : undefined;
   const isChatWithBot = toChatId ? selectIsChatWithBot(global, toChatId) : undefined;
   const options = getAllowedAttachmentOptions(chat, chatFullInfo, isChatWithBot, isSavedMessages);
-  return !messageIds!.some((messageId) => сheckMessageSendingDenied(chatMessages[messageId], options));
+  return !messageIds!.some((messageId) => {
+    const message = selectChatMessageOrEphemeral(global, fromChatId!, messageId);
+    return !message || сheckMessageSendingDenied(message, options);
+  });
 }
 function сheckMessageSendingDenied(message: ApiMessage, options: IAllowedAttachmentOptions) {
   const isVoice = message.content.voice;

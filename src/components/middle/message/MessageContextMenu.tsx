@@ -593,7 +593,7 @@ const MessageContextMenu = ({
         {message.isEphemeral && (
           <>
             <MenuSeparator size="thick" />
-            <MenuItem disabled withWrap>
+            <MenuItem className="smaller" disabled withWrap>
               {lang('EphemeralContextMenuNotice')}
             </MenuItem>
           </>
