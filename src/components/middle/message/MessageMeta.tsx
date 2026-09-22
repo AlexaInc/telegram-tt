@@ -215,6 +215,7 @@ const MessageMeta = ({
         </span>
       )}
       <span className="message-time" title={dateTitle} onMouseEnter={markActivated}>
+        {Boolean(message.anchorMsgId) && `${lang('EphemeralUpdated')} `}
         {message.forwardInfo?.isImported && (
           <>
             <span className="message-imported" onClick={handleImportedClick}>

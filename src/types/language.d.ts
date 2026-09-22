@@ -707,6 +707,10 @@ export interface LangPair {
   'EphemeralOnlyVisible': undefined;
   'EphemeralContextMenuNotice': undefined;
   'EphemeralReplyUnavailable': undefined;
+  'EphemeralRevert': undefined;
+  'EphemeralRevertDescription': undefined;
+  'EphemeralAnchoredNotice': undefined;
+  'EphemeralUpdated': undefined;
   'NoStickers': undefined;
   'ClearRecentEmoji': undefined;
   'Save': undefined;

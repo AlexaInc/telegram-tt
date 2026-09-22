@@ -15,9 +15,8 @@ import { renderMessageSummaryHtml } from '../../../../global/helpers/renderMessa
 import {
   selectAllowedMessageActionsSlow,
   selectChat,
-  selectChatMessages,
+  selectChatMessageOrEphemeral,
   selectChatScheduledMessages,
-  selectEphemeralMessage,
   selectMessageTranslations,
   selectRequestedChatTranslationLanguage,
   selectRequestedChatTranslationTone,
@@ -120,19 +119,18 @@ function buildMessagesDoc(
 
 function getMessagesForCopy(global: GlobalState, messageList: MessageList, messageIds: number[]) {
   const { chatId, threadId, type } = messageList;
-  const messages = type === 'scheduled'
-    ? selectChatScheduledMessages(global, chatId)
-    : selectChatMessages(global, chatId);
-  if (!messages) return [];
+  const scheduledMessages = type === 'scheduled' ? selectChatScheduledMessages(global, chatId) : undefined;
 
   return messageIds
-    .map((id) => messages[id] || selectEphemeralMessage(global, chatId, id))
+    .map((id) => type === 'scheduled' ? scheduledMessages?.[id] : selectChatMessageOrEphemeral(global, chatId, id))
     .filter((message): message is ApiMessage => message !== undefined
       && Boolean(selectAllowedMessageActionsSlow(global, message, threadId).canCopy))
     .sort((left, right) => left.id - right.id);
 }
 
 function selectMessageCopyText(global: GlobalState, message: ApiMessage, tabId: number): ApiFormattedText | undefined {
+  if (message.isEphemeral) return message.content.text;
+
   const chatLanguage = selectRequestedChatTranslationLanguage(global, message.chatId, tabId);
   const messageLanguage = selectRequestedMessageTranslationLanguage(global, message.chatId, message.id, tabId);
   const cacheKey = chatLanguage

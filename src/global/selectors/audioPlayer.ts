@@ -15,7 +15,7 @@ import { getCurrentTabId } from '../../util/establishMultitabRole';
 import { buildSearchResultKey, isSearchResultKey, parseSearchResultKey } from '../../util/keys/searchResultKey';
 import { getRichMessageAudios, getWebPageAudio } from '../helpers/messageMedia';
 import {
-  selectChatMessage, selectChatMessageOrEphemeral, selectEphemeralMessage, selectFullWebPage, selectWebPageFromMessage,
+  selectChatMessage, selectChatMessageOrEphemeral, selectFullWebPage, selectWebPageFromMessage,
 } from './messages';
 import { selectChatMediaSearch } from './middleSearch';
 import { selectTabState } from './tabs';
@@ -44,8 +44,7 @@ export function selectPlaybackItem<T extends GlobalState>(
 export function selectPlaybackMessage<T extends GlobalState>(global: T, itemRef?: PlaybackItemRef) {
   if (itemRef?.type !== 'message') return undefined;
 
-  return selectChatMessage(global, itemRef.chatId, itemRef.messageId)
-    || selectEphemeralMessage(global, itemRef.chatId, itemRef.messageId);
+  return selectChatMessageOrEphemeral(global, itemRef.chatId, itemRef.messageId);
 }
 
 export function selectPlaybackMedia<T extends GlobalState>(global: T, itemRef?: PlaybackItemRef) {
@@ -73,7 +72,7 @@ function selectSavedMusicAudio<T extends GlobalState>(global: T, peerId: string,
 function selectMessagePlaybackMedia<T extends GlobalState>(
   global: T, chatId: string, messageId: number, documentId?: string,
 ) {
-  const message = selectChatMessage(global, chatId, messageId) || selectEphemeralMessage(global, chatId, messageId);
+  const message = selectChatMessageOrEphemeral(global, chatId, messageId);
   if (!message) return undefined;
 
   if (documentId) {

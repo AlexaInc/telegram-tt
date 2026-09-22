@@ -88,6 +88,7 @@ import {
   selectChatFullInfo,
   selectChatHistoryTtl,
   selectChatMessage,
+  selectChatMessageOrEphemeral,
   selectChatType,
   selectCurrentMessageList,
   selectCustomEmoji,
@@ -3189,8 +3190,7 @@ export default memo(withGlobal<OwnProps>(
     const emojiKeywords = language !== BASE_EMOJI_KEYWORD_LANG ? global.emojiKeywords[language] : undefined;
     const botKeyboardMessageId = messageWithActualBotKeyboard ? messageWithActualBotKeyboard.id : undefined;
     const keyboardMessage = botKeyboardMessageId
-      ? selectChatMessage(global, chatId, botKeyboardMessageId)
-      || selectEphemeralMessage(global, chatId, botKeyboardMessageId)
+      ? selectChatMessageOrEphemeral(global, chatId, botKeyboardMessageId)
       : undefined;
     const { currentUserId } = global;
     const currentUser = selectUser(global, currentUserId!)!;

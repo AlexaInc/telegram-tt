@@ -299,7 +299,7 @@ function pruneExpiredEphemeralMessages(cached: GlobalState) {
   const serverTime = getServerTime();
   Object.values(cached.messages.byChatId).forEach(({ ephemeralById }) => {
     Object.values(ephemeralById).forEach((message) => {
-      if (message.date + EPHEMERAL_MESSAGE_TTL_SECONDS <= serverTime) {
+      if (message.anchorMsgId || message.date + EPHEMERAL_MESSAGE_TTL_SECONDS <= serverTime) {
         delete ephemeralById[message.id];
       }
     });
@@ -310,6 +310,7 @@ function unsafeMigrateCache(cached: GlobalState, initialState: GlobalState) {
   const untypedCached = cached as any;
   Object.values(cached.messages.byChatId).forEach((messageStore) => {
     messageStore.ephemeralById ||= {};
+    messageStore.anchoredById = {};
   });
 
   Object.values(cached.messages.webPageById).forEach((webPage) => {
@@ -852,6 +853,7 @@ function reduceMessages<T extends GlobalState>(global: T): GlobalState['messages
     const ephemeralById = Object.values(current.ephemeralById).reduce((acc, message) => {
       if (
         message.sendingState
+        || message.anchorMsgId
         || message.date + EPHEMERAL_MESSAGE_TTL_SECONDS <= serverTime
       ) {
         return acc;
@@ -869,6 +871,7 @@ function reduceMessages<T extends GlobalState>(global: T): GlobalState['messages
     byChatId[chatId] = {
       byId: cleanedById,
       ephemeralById,
+      anchoredById: {},
       threadsById,
       summaryById: {},
     };

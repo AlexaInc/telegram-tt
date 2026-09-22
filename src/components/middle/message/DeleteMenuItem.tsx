@@ -6,10 +6,8 @@ import useForceUpdate from '../../../hooks/useForceUpdate';
 import useLang from '../../../hooks/useLang';
 
 import Icon from '../../common/icons/Icon';
-import MenuItem from '../../ui/MenuItem';
+import MenuItem, { MenuItemSubtitle, MenuItemTitle } from '../../ui/MenuItem';
 import TextTimer from '../../ui/TextTimer';
-
-import styles from './DeleteMenuItem.module.scss';
 
 type OwnProps = {
   autoDeleteAt?: number;
@@ -24,17 +22,15 @@ function DeleteMenuItem({ autoDeleteAt, onDelete }: OwnProps) {
 
   return (
     <MenuItem destructive icon="delete" onClick={onDelete}>
-      {hasAutoDeleteTimer ? (
-        <div className={styles.content}>
-          <span>{lang('Delete')}</span>
-          <span className={styles.subtitle}>
-            <Icon name="timer" className="in-text-icon" />
-            {lang('AutoDeleteIn', {
-              time: <TextTimer endsAt={autoDeleteAt!} mode="rounded" onEnd={forceUpdate} />,
-            }, { withNodes: true })}
-          </span>
-        </div>
-      ) : lang('Delete')}
+      <MenuItemTitle>{lang('Delete')}</MenuItemTitle>
+      {hasAutoDeleteTimer && (
+        <MenuItemSubtitle>
+          <Icon name="timer" className="in-text-icon" />
+          {lang('AutoDeleteIn', {
+            time: <TextTimer endsAt={autoDeleteAt!} mode="rounded" onEnd={forceUpdate} />,
+          }, { withNodes: true })}
+        </MenuItemSubtitle>
+      )}
     </MenuItem>
   );
 }

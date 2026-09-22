@@ -942,8 +942,7 @@ addActionHandler('editTodo', (global, actions, payload): ActionReturnType => {
 addActionHandler('cancelUploadMedia', (global, actions, payload): ActionReturnType => {
   const { chatId, messageId } = payload;
 
-  const message = selectChatMessage(global, chatId, messageId)
-    || selectEphemeralMessage(global, chatId, messageId);
+  const message = selectChatMessageOrEphemeral(global, chatId, messageId);
   if (!message) return;
 
   if (message.isEphemeral) {
@@ -1314,10 +1313,10 @@ addActionHandler('deleteEphemeralMessage', async (global, actions, payload): Pro
   if (!message) return;
 
   const isLocal = isLocalMessageId(message.id);
-  const shouldDeleteOnServer = !isLocal && message.isOutgoing;
+  const shouldDeleteOnServer = !isLocal && (message.isOutgoing || Boolean(message.anchorMsgId));
   const chat = shouldDeleteOnServer ? selectChat(global, chatId) : undefined;
-  const receiver = shouldDeleteOnServer && message.ephemeralBotId
-    ? selectUser(global, message.ephemeralBotId) : undefined;
+  const receiverId = message.anchorMsgId ? message.ephemeralReceiverId : message.ephemeralBotId;
+  const receiver = shouldDeleteOnServer && receiverId ? selectUser(global, receiverId) : undefined;
   if (shouldDeleteOnServer && (!chat || !receiver)) {
     runForFocusedTabs(global, (tabId) => {
       actions.showNotification({ message: { key: 'ErrorUnspecified' }, tabId });

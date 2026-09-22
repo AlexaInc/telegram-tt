@@ -9,7 +9,7 @@ import { omit } from '../../../util/iteratees';
 import { getMessageReplyInfo } from '../../helpers/replies';
 import { addActionHandler } from '../../index';
 import { updateTabState } from '../../reducers/tabs';
-import { selectChatMessage, selectReplyMessage, selectTabState } from '../../selectors';
+import { selectChatMessageOrEphemeral, selectReplyMessage, selectTabState } from '../../selectors';
 import { selectTimestampableMedia } from '../../selectors/media';
 
 addActionHandler('openMediaViewer', (global, actions, payload): ActionReturnType => {
@@ -64,7 +64,7 @@ addActionHandler('openMediaFromTimestamp', (global, actions, payload): ActionRet
     chatId, messageId, threadId, timestamp, tabId = getCurrentTabId(),
   } = payload;
 
-  const message = selectChatMessage(global, chatId, messageId);
+  const message = selectChatMessageOrEphemeral(global, chatId, messageId);
   if (!message) return;
 
   const replyInfo = getMessageReplyInfo(message);
@@ -80,7 +80,7 @@ addActionHandler('openMediaFromTimestamp', (global, actions, payload): ActionRet
         chatId,
         messageId,
         threadId,
-        origin: MediaViewerOrigin.Inline,
+        origin: message.isEphemeral ? MediaViewerOrigin.Ephemeral : MediaViewerOrigin.Inline,
         timestamp,
         tabId,
       });

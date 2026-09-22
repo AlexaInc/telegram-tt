@@ -24,6 +24,7 @@ import {
 import { isLocalMessageId, type MessageKey } from '../../util/keys/messageKey';
 import { unload } from '../../util/mediaLoader';
 import {
+  buildAnchoredEphemeralMessage,
   getAllMessageMediaHashes,
   getMessageStatefulContent,
   groupMessageIdsByThreadId,
@@ -110,9 +111,28 @@ export function updateCurrentMessageList<T extends GlobalState>(
 export function replaceChatMessages<T extends GlobalState>(
   global: T, chatId: string, newById: Record<number, ApiMessage>,
 ): T {
-  return updateMessageStore(global, chatId, {
+  const store = global.messages.byChatId[chatId];
+  global = updateMessageStore(global, chatId, {
     byId: newById,
   });
+
+  Object.values(store?.ephemeralById || {}).forEach((message) => {
+    if (!message.anchorMsgId) return;
+    const anchor = newById[message.anchorMsgId];
+    const previousAnchor = store.byId[message.anchorMsgId];
+    if (anchor === previousAnchor || areDeepEqual(anchor, previousAnchor)) return;
+
+    if (!anchor || anchor.isDeleting || anchor.groupedId || anchor.content.action || (previousAnchor && (
+      !areDeepEqual(anchor.content, previousAnchor.content) || anchor.editDate !== previousAnchor.editDate
+    ))) {
+      global = deleteEphemeralMessages(global, chatId, [message.id]);
+      return;
+    }
+
+    global = updateEphemeralMessage(global, message);
+  });
+
+  return global;
 }
 
 type MessageStoreBatch = {
@@ -151,7 +171,7 @@ export function updateMessageStore<T extends GlobalState>(
 ): T {
   const { byChatId } = global.messages;
   const current = byChatId[chatId]
-    || { byId: {}, ephemeralById: {}, threadsById: {}, summaryById: {} };
+    || { byId: {}, ephemeralById: {}, anchoredById: {}, threadsById: {}, summaryById: {} };
   const newStore = {
     ...current,
     ...update,
@@ -182,9 +202,27 @@ export function updateMessageStore<T extends GlobalState>(
 export function updateEphemeralMessage<T extends GlobalState>(
   global: T, message: ApiMessage,
 ): T {
-  const ephemeralById = global.messages.byChatId[message.chatId]?.ephemeralById || {};
+  const store = global.messages.byChatId[message.chatId];
+  let anchoredById = store?.anchoredById || {};
+  let ephemeralById = store?.ephemeralById || {};
+  if (message.anchorMsgId) {
+    const anchor = selectChatMessage(global, message.chatId, message.anchorMsgId);
+    if (anchor && (anchor.content.action || anchor.groupedId || anchor.isDeleting)) return global;
+
+    const previous = Object.values(ephemeralById).find(({ anchorMsgId }) => anchorMsgId === message.anchorMsgId);
+    if (previous && previous.id !== message.id) {
+      ephemeralById = omit(ephemeralById, [previous.id]);
+    }
+    if (anchor) {
+      anchoredById = {
+        ...anchoredById,
+        [anchor.id]: buildAnchoredEphemeralMessage(anchor, message),
+      };
+    }
+  }
 
   return updateMessageStore(global, message.chatId, {
+    anchoredById,
     ephemeralById: {
       ...ephemeralById,
       [message.id]: message,
@@ -195,10 +233,16 @@ export function updateEphemeralMessage<T extends GlobalState>(
 export function deleteEphemeralMessages<T extends GlobalState>(
   global: T, chatId: string, messageIds: number[],
 ): T {
-  const ephemeralById = global.messages.byChatId[chatId]?.ephemeralById;
+  const store = global.messages.byChatId[chatId];
+  const ephemeralById = store?.ephemeralById;
   if (!ephemeralById || !messageIds.some((id) => ephemeralById[id])) return global;
 
+  const anchorIds = messageIds.map((id) => {
+    const anchorId = ephemeralById[id]?.anchorMsgId;
+    return anchorId && store.anchoredById[anchorId]?.ephemeralId === id ? anchorId : undefined;
+  }).filter(Boolean);
   return updateMessageStore(global, chatId, {
+    anchoredById: anchorIds.length ? omit(store.anchoredById, anchorIds) : store.anchoredById,
     ephemeralById: omit(ephemeralById, messageIds),
   });
 }
@@ -207,7 +251,7 @@ export function clearEphemeralMessages<T extends GlobalState>(global: T, chatId:
   const ephemeralById = global.messages.byChatId[chatId]?.ephemeralById;
   if (!ephemeralById || !Object.keys(ephemeralById).length) return global;
 
-  return updateMessageStore(global, chatId, { ephemeralById: {} });
+  return updateMessageStore(global, chatId, { ephemeralById: {}, anchoredById: {} });
 }
 
 export function addMessages<T extends GlobalState>(

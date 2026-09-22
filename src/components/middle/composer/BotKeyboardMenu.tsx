@@ -7,7 +7,7 @@ import type { ThreadId } from '../../../types';
 
 import { isKeyboardButtonUnsupportedForEphemeral } from '../../../global/helpers';
 import { isButtonUnsupported } from '../../../global/helpers/buttons';
-import { selectChatMessage, selectCurrentMessageList, selectEphemeralMessage } from '../../../global/selectors';
+import { selectChatMessageOrEphemeral, selectCurrentMessageList } from '../../../global/selectors';
 import { IS_TOUCH_ENV } from '../../../util/browser/windowEnvironment';
 import buildClassName from '../../../util/buildClassName';
 import renderKeyboardButtonText from './helpers/renderKeyboardButtonText';
@@ -118,7 +118,7 @@ export default memo(withGlobal<OwnProps>(
     const { chatId } = selectCurrentMessageList(global) || {};
 
     const message = chatId
-      ? selectChatMessage(global, chatId, messageId) || selectEphemeralMessage(global, chatId, messageId)
+      ? selectChatMessageOrEphemeral(global, chatId, messageId)
       : undefined;
     return {
       message,

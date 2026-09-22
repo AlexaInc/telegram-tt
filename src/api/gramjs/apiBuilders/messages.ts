@@ -184,6 +184,8 @@ export function buildApiEphemeralMessage(mtpMessage: GramJs.EphemeralMessage): A
     ...message,
     content: message.content.pollId ? {} : message.content,
     ephemeralBotId: mtpMessage.out ? receiverId : fromId,
+    ephemeralReceiverId: receiverId,
+    anchorMsgId: mtpMessage.anchorMsgId,
     ephemeralTopMsgId: mtpMessage.topMsgId,
     isEphemeral: true,
   };

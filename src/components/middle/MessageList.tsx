@@ -33,6 +33,7 @@ import {
   selectBot,
   selectCanTranslateChat,
   selectChat,
+  selectChatAnchoredMessages,
   selectChatEphemeralMessages,
   selectChatFullInfo,
   selectChatLastMessage,
@@ -143,6 +144,7 @@ type StateProps = {
   messageIds?: number[];
   messagesById?: Record<number, ApiMessage>;
   ephemeralById?: Record<number, ApiMessage>;
+  anchoredById?: Record<number, ApiMessage>;
   firstUnreadId?: number;
   isViewportNewest?: boolean;
   restrictionReasons?: ApiRestrictionReason[];
@@ -252,6 +254,7 @@ const MessageList = ({
   messageIds,
   messagesById,
   ephemeralById,
+  anchoredById,
   firstUnreadId,
   isComments,
   isViewportNewest,
@@ -347,12 +350,13 @@ const MessageList = ({
       };
     }
 
-    const normalMessages = messageIds.map((id) => messagesById[id]).filter(Boolean);
+    const normalMessages = messageIds.map((id) => anchoredById?.[id] || messagesById[id]).filter(Boolean);
     const normalDates = normalMessages.map(({ date }) => date);
     const oldestDate = normalDates.length ? Math.min(...normalDates) : undefined;
     const newestDate = normalDates.length ? Math.max(...normalDates) : undefined;
     const currentThreadId = Number(threadId);
     const ephemeralMessages = Object.values(ephemeralById || {}).filter((message) => {
+      if (message.anchorMsgId) return false;
       const isInThread = currentThreadId === MAIN_THREAD_ID
         ? message.ephemeralTopMsgId === undefined
         : message.ephemeralTopMsgId === currentThreadId;
@@ -367,7 +371,7 @@ const MessageList = ({
       renderMessageIds: renderMessages.map(({ id }) => id),
       renderMessagesById: buildCollectionByKey(renderMessages, 'id'),
     };
-  }, [ephemeralById, isViewportNewest, messageIds, messagesById, threadId, type]);
+  }, [anchoredById, ephemeralById, isViewportNewest, messageIds, messagesById, threadId, type]);
   const { renderMessageIds, renderMessagesById } = renderData;
   const previousRenderMessageIds = usePrevious(renderMessageIds);
   const addedMessageInfo = useMemo(() => (isViewportNewest ? getAddedMessageInfo(
@@ -1434,6 +1438,7 @@ export default memo(withGlobal<OwnProps>(
     const messageIds = selectCurrentMessageIds(global, chatId, threadId, type);
     const chatMessagesById = selectChatMessages(global, chatId);
     const ephemeralById = type === 'thread' ? selectChatEphemeralMessages(global, chatId) : undefined;
+    const anchoredById = type === 'thread' ? selectChatAnchoredMessages(global, chatId) : undefined;
     const messagesById = type === 'scheduled'
       ? selectChatScheduledMessages(global, chatId)
       : chatMessagesById;
@@ -1510,6 +1515,7 @@ export default memo(withGlobal<OwnProps>(
       messageIds,
       messagesById,
       ephemeralById,
+      anchoredById,
       firstUnreadId: selectFirstUnreadId(global, chatId, threadId),
       isViewportNewest: type !== 'thread' || selectIsViewportNewest(global, chatId, threadId),
       focusingId,

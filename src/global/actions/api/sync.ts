@@ -331,21 +331,24 @@ function preserveCurrentThreads<T extends GlobalState>(global: T) {
     }
 
     const { chatId, threadId = MAIN_THREAD_ID } = currentMessageList;
-    const currentThread = global.messages.byChatId[chatId]?.threadsById[threadId];
+    const messages = global.messages.byChatId[chatId];
+    const currentThread = messages?.threadsById[threadId];
     if (!currentThread) {
       return acc;
     }
 
     const pinnedMessagesById = pickTruthy(
-      global.messages.byChatId[chatId].byId, currentThread.localState?.pinnedIds || [],
+      messages.byId, currentThread.localState?.pinnedIds || [],
     );
 
     acc[chatId] = {
       byId: {
         ...acc[chatId]?.byId,
+        ...pickTruthy(messages.byId, Object.keys(messages.anchoredById).map(Number)),
         ...pinnedMessagesById,
       },
-      ephemeralById: global.messages.byChatId[chatId]?.ephemeralById || {},
+      ephemeralById: messages.ephemeralById,
+      anchoredById: messages.anchoredById,
       summaryById: {},
       threadsById: {
         ...acc[chatId]?.threadsById,
@@ -377,8 +380,12 @@ function preserveThreads<T extends GlobalState>(global: T) {
       if (threadId !== MAIN_THREAD_ID && !hasLocalComposerState) return;
 
       preservedByChatId[chatId] = {
-        byId: { ...preservedByChatId[chatId]?.byId },
+        byId: {
+          ...preservedByChatId[chatId]?.byId,
+          ...pickTruthy(messages.byId, Object.keys(messages.anchoredById).map(Number)),
+        },
         ephemeralById: messages.ephemeralById,
+        anchoredById: messages.anchoredById,
         summaryById: {},
         threadsById: {
           ...preservedByChatId[chatId]?.threadsById,

@@ -59,6 +59,7 @@ import {
   selectChatFullInfo,
   selectChatLastMessageId,
   selectChatMessage,
+  selectChatMessageOrEphemeral,
   selectCurrentChat,
   selectCurrentMessageList,
   selectEphemeralMessage,
@@ -134,8 +135,7 @@ addActionHandler('clickBotInlineButton', (global, actions, payload): ActionRetur
   }
   if (!chatId || messageId === undefined) return;
   const chat = selectChat(global, chatId);
-  const message = selectChatMessage(global, chatId, messageId)
-    || selectEphemeralMessage(global, chatId, messageId);
+  const message = selectChatMessageOrEphemeral(global, chatId, messageId);
   if (!chat || !message) {
     return;
   }
@@ -153,7 +153,7 @@ addActionHandler('clickBotInlineButton', (global, actions, payload): ActionRetur
     case 'callback': {
       void answerCallbackButton(global, {
         chat,
-        messageId,
+        messageId: message.ephemeralId || message.id,
         threadId,
         data: button.action.data,
         isEphemeral: message.isEphemeral,
@@ -420,13 +420,12 @@ addActionHandler('switchBotInline', (global, actions, payload): ActionReturnType
   }
 
   if (!botId && messageId) {
-    const message = selectChatMessage(global, chat.id, messageId)
-      || selectEphemeralMessage(global, chat.id, messageId);
+    const message = selectChatMessageOrEphemeral(global, chat.id, messageId);
     if (!message) {
       return undefined;
     }
     const sender = selectSender(global, message);
-    botId = message.viaBotId || sender?.id;
+    botId = message.ephemeralBotId || message.viaBotId || sender?.id;
   }
 
   if (!botId) {

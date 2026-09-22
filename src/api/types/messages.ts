@@ -767,6 +767,9 @@ export type BoughtPaidMedia = Pick<MediaContent, 'photo' | 'video'>;
 export interface ApiMessage {
   id: number;
   ephemeralBotId?: string;
+  ephemeralId?: number;
+  ephemeralReceiverId?: string;
+  anchorMsgId?: number;
   ephemeralRandomId?: string;
   ephemeralTopMsgId?: number;
   isEphemeral?: true;

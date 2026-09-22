@@ -830,6 +830,10 @@
 "EphemeralOnlyVisibleToBot" = "Only visible to {bot}";
 "EphemeralContextMenuNotice" = "Only you see this message. It will disappear after you log in again.";
 "EphemeralReplyUnavailable" = "Message is no longer available";
+"EphemeralRevert" = "Revert";
+"EphemeralRevertDescription" = "Restores the message to its original content";
+"EphemeralAnchoredNotice" = "This version of the message is only visible to you.";
+"EphemeralUpdated" = "updated";
 "NoStickers" = "No stickers yet";
 "ClearRecentEmoji" = "Clear recent emoji?";
 "Save" = "Save";

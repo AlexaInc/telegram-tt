@@ -29,11 +29,11 @@ import {
 import { hasRichText } from '../../global/helpers/richMessage';
 import {
   selectChatMessage,
+  selectChatMessageOrEphemeral,
   selectChatMessages,
   selectChatScheduledMessages,
   selectCurrentChatMediaSearch,
   selectCurrentSharedMediaSearch,
-  selectEphemeralMessage,
   selectIsChatWithSelf,
   selectListedIds,
   selectOutlyingListByMessageId,
@@ -711,7 +711,7 @@ export default memo(withGlobal(
     let message: ApiMessage | undefined;
     if (chatId && messageId) {
       if (origin === MediaViewerOrigin.Ephemeral) {
-        message = selectEphemeralMessage(global, chatId, messageId);
+        message = selectChatMessageOrEphemeral(global, chatId, messageId);
       } else if (origin && [MediaViewerOrigin.ScheduledAlbum, MediaViewerOrigin.ScheduledInline].includes(origin)) {
         message = selectScheduledMessage(global, chatId, messageId);
       } else {

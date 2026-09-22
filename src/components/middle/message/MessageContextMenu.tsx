@@ -44,7 +44,7 @@ import useOldLang from '../../../hooks/useOldLang';
 import AvatarList from '../../common/AvatarList';
 import Icon from '../../common/icons/Icon';
 import Menu from '../../ui/Menu';
-import MenuItem from '../../ui/MenuItem';
+import MenuItem, { MenuItemSubtitle, MenuItemTitle } from '../../ui/MenuItem';
 import MenuSeparator from '../../ui/MenuSeparator';
 import NestedMenuItem from '../../ui/NestedMenuItem';
 import Skeleton from '../../ui/placeholder/Skeleton';
@@ -581,12 +581,17 @@ const MessageContextMenu = ({
         {canForward && <MenuItem icon="forward" onClick={onForward}>{oldLang('Forward')}</MenuItem>}
         {canSelect && <MenuItem icon="select" onClick={onSelect}>{oldLang('Common.Select')}</MenuItem>}
         {canReport && <MenuItem icon="flag" onClick={onReport}>{oldLang('lng_context_report_msg')}</MenuItem>}
-        {canDelete && <DeleteMenuItem autoDeleteAt={autoDeleteAt} onDelete={onDelete} />}
+        {canDelete && (message.anchorMsgId ? (
+          <MenuItem destructive icon="reload" onClick={onDelete}>
+            <MenuItemTitle>{lang('EphemeralRevert')}</MenuItemTitle>
+            <MenuItemSubtitle>{lang('EphemeralRevertDescription')}</MenuItemSubtitle>
+          </MenuItem>
+        ) : <DeleteMenuItem autoDeleteAt={autoDeleteAt} onDelete={onDelete} />)}
         {message.isEphemeral && (
           <>
             <MenuSeparator size="thick" />
             <MenuItem className="smaller" disabled withWrap>
-              {lang('EphemeralContextMenuNotice')}
+              {lang(message.anchorMsgId ? 'EphemeralAnchoredNotice' : 'EphemeralContextMenuNotice')}
             </MenuItem>
           </>
         )}

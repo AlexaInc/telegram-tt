@@ -131,6 +131,10 @@ export function selectChatEphemeralMessages<T extends GlobalState>(global: T, ch
   return global.messages.byChatId[chatId]?.ephemeralById;
 }
 
+export function selectChatAnchoredMessages<T extends GlobalState>(global: T, chatId: string) {
+  return global.messages.byChatId[chatId]?.anchoredById;
+}
+
 export function selectChatScheduledMessages<T extends GlobalState>(global: T, chatId: string) {
   return global.scheduledMessages.byChatId[chatId]?.byId;
 }
@@ -264,13 +268,18 @@ export function selectChatMessage<T extends GlobalState>(global: T, chatId: stri
 
 export function selectEphemeralMessage<T extends GlobalState>(global: T, chatId: string, messageId: number) {
   const ephemeralById = selectChatEphemeralMessages(global, chatId);
-  return ephemeralById?.[messageId];
+  if (!ephemeralById) return undefined;
+  const ephemeralId = selectChatAnchoredMessages(global, chatId)?.[messageId]?.ephemeralId;
+  return ephemeralById[ephemeralId || messageId];
 }
 
 export function selectChatMessageOrEphemeral<T extends GlobalState>(
   global: T, chatId: string, messageId: number,
 ) {
-  return selectChatMessage(global, chatId, messageId) || selectEphemeralMessage(global, chatId, messageId);
+  const ephemeral = selectChatEphemeralMessages(global, chatId)?.[messageId];
+  const anchorId = ephemeral?.anchorMsgId || messageId;
+  return selectChatAnchoredMessages(global, chatId)?.[anchorId]
+    || selectChatMessage(global, chatId, anchorId) || ephemeral;
 }
 
 export function selectScheduledMessage<T extends GlobalState>(global: T, chatId: string, messageId: number) {
@@ -519,6 +528,8 @@ export function selectCanReplyToMessage<T extends GlobalState>(global: T, messag
 }
 
 export function selectCanForwardMessage<T extends GlobalState>(global: T, message: ApiMessage) {
+  if (message.anchorMsgId) return false;
+
   const isLocal = isMessageLocal(message);
   const isServiceNotification = isServiceNotificationMessage(message);
   const isAction = isActionMessage(message);
@@ -1021,7 +1032,7 @@ export function selectNewestMessageWithBotKeyboardButtons<T extends GlobalState>
   let newestDate: number | undefined;
 
   viewportIds.forEach((id) => {
-    const message = chatMessages[id];
+    const message = selectChatMessageOrEphemeral(global, chatId, id);
     if (!message) return;
 
     if (oldestDate === undefined || message.date < oldestDate) oldestDate = message.date;
@@ -1037,6 +1048,7 @@ export function selectNewestMessageWithBotKeyboardButtons<T extends GlobalState>
   const isViewportNewest = selectIsViewportNewest(global, chatId, threadId, tabId);
   const topicId = Number(threadId);
   Object.values(ephemeralMessages || {}).forEach((message) => {
+    if (message.anchorMsgId) return;
     const isInThread = topicId === MAIN_THREAD_ID
       ? message.ephemeralTopMsgId === undefined
       : message.ephemeralTopMsgId === topicId;

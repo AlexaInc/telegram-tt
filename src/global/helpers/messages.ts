@@ -347,7 +347,7 @@ export function isMessageTranslatable(message: ApiMessage, allowOutgoing?: boole
   const isAction = isActionMessage(message);
 
   return Boolean(text?.text.length && !text.emojiOnlyCount && !game && (allowOutgoing || !message.isOutgoing)
-    && !isLocal && !isServiceNotification && !isAction && !message.isScheduled);
+    && !isLocal && !isServiceNotification && !isAction && !message.isScheduled && !message.isEphemeral);
 }
 
 export function getMessageSingleInlineButton(message: ApiMessage) {

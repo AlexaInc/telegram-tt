@@ -68,6 +68,7 @@ import {
   isChatPublic,
   isGeoLiveExpired,
   isMessageLocal,
+  isMessageLocalOnly,
   isMessageTranslatable,
   isOwnMessage,
   isReplyToMessage,
@@ -519,6 +520,8 @@ const Message = ({
     isTypingDraft, previousLocalId, fromRank,
   } = message;
 
+  const isLocalOnly = isMessageLocalOnly(message);
+
   const [isTranscriptionHidden, setIsTranscriptionHidden] = useState(false);
   const [isPlayingSnapAnimation, setIsPlayingSnapAnimation] = useState(false);
   const [isPlayingDeleteAnimation, setIsPlayingDeleteAnimation] = useState(false);
@@ -529,7 +532,7 @@ const Message = ({
   const [declineReason, setDeclineReason] = useState('');
   const { isMobile, isTouchScreen } = useAppLayout();
 
-  useOnIntersect(bottomMarkerRef, isTypingDraft || message.isEphemeral ? undefined : observeIntersectionForBottom);
+  useOnIntersect(bottomMarkerRef, isTypingDraft || isLocalOnly ? undefined : observeIntersectionForBottom);
 
   const {
     isContextMenuOpen,
@@ -589,7 +592,7 @@ const Message = ({
     && threadId === MAIN_THREAD_ID
     && !isQuickPreview
     && !isLocal
-    && !message.isEphemeral
+    && !isLocalOnly
     && readMetricsMessage.viewsCount !== undefined;
   const hasMessageReply = isReplyToMessage(message) && !shouldHideReply
     && (!isEphemeralReply || Boolean(replyMessage));
@@ -902,7 +905,7 @@ const Message = ({
     }
   }, [isShowingSummary, summary?.text]);
 
-  const currentTranslatedText = translatedText || previousTranslatedText;
+  const currentTranslatedText = shouldTranslate ? translatedText || previousTranslatedText : undefined;
 
   const phoneCall = action?.type === 'phoneCall' ? action : undefined;
 
@@ -1025,7 +1028,7 @@ const Message = ({
     || undefined;
 
   useEffect(() => {
-    if (isTypingDraft || message.isEphemeral) {
+    if (isTypingDraft || isLocalOnly) {
       return;
     }
 
@@ -1070,7 +1073,7 @@ const Message = ({
     isQuickPreview,
     isOwn,
     isTypingDraft,
-    message.isEphemeral,
+    isLocalOnly,
     markMessageListRead,
     messageId,
     memoFirstUnreadIdRef,
@@ -1252,7 +1255,7 @@ const Message = ({
     );
     const shouldReadMedia = !hasTtl || !isOwn || isChatWithSelf;
     let ephemeralBotName: string | undefined;
-    if (message.isEphemeral && message.isOutgoing) {
+    if (isLocalOnly && message.isOutgoing) {
       if (!ephemeralBot) {
         ephemeralBotName = lang('Bot');
       } else if (ephemeralBot.hasUsername) {
@@ -1271,7 +1274,7 @@ const Message = ({
               <BadgeButton className="ephemeral-header">
                 <Icon name="eye-outline" />
                 <span dir="auto">
-                  {message.isOutgoing
+                  {message.isOutgoing && isLocalOnly
                     ? lang('EphemeralOnlyVisibleToBot', { bot: ephemeralBotName! })
                     : lang('EphemeralOnlyVisible')}
                 </span>
@@ -2285,7 +2288,8 @@ export default memo(withGlobal<OwnProps>(
     const isMediaNsfw = selectIsMediaNsfw(global, message);
     const isReplyMediaNsfw = replyMessage && selectIsMediaNsfw(global, replyMessage);
 
-    const summary = selectMessageSummary(global, chatId, message.id, requestedTranslationLanguage);
+    const summary = !message.isEphemeral
+      ? selectMessageSummary(global, chatId, message.id, requestedTranslationLanguage) : undefined;
 
     const allowedAttachmentOptions = getAllowedAttachmentOptions(chat, chatFullInfo, isChatWithBot);
 

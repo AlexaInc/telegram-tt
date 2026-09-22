@@ -8,7 +8,7 @@ import type { RichTextProps } from './RichText';
 import { isButtonUnsupported } from '../../global/helpers/buttons';
 import { isKeyboardButtonUnsupportedForEphemeral } from '../../global/helpers/ephemeralMessages';
 import { getRichTextPlainText } from '../../global/helpers/richMessage';
-import { selectChatMessage, selectEphemeralMessage } from '../../global/selectors';
+import { selectChatMessageOrEphemeral } from '../../global/selectors';
 import buildClassName from '../../util/buildClassName';
 
 import useLang from '../../hooks/useLang';
@@ -96,7 +96,7 @@ const RichButton = ({
 
 export default memo(withGlobal<OwnProps>((global, { chatId, messageId }): Complete<StateProps> => {
   const message = chatId && messageId !== undefined
-    ? selectChatMessage(global, chatId, messageId) || selectEphemeralMessage(global, chatId, messageId) : undefined;
+    ? selectChatMessageOrEphemeral(global, chatId, messageId) : undefined;
   return {
     isReceipt: Boolean(message?.content.invoice?.receiptMessageId),
     isEphemeral: message?.isEphemeral,

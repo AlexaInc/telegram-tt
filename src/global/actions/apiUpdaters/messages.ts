@@ -251,7 +251,7 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
       setGlobal(global);
       scheduleEphemeralExpiration(global);
 
-      if (update['@type'] === 'newEphemeralMessage' && update.shouldForceReply) {
+      if (update['@type'] === 'newEphemeralMessage' && update.shouldForceReply && !message.anchorMsgId) {
         Object.values(global.byTabId).forEach(({ id: tabId }) => {
           if (!isEphemeralMessageInCurrentThread(global, tabId, message)) return;
 
@@ -1775,6 +1775,10 @@ export function deleteEphemeralMessagesWithAnimation<T extends GlobalState>(
   if (!messages.length) return;
 
   messages.forEach((message) => {
+    if (message.anchorMsgId) {
+      global = deleteEphemeralMessages(global, chatId, [message.id]);
+      return;
+    }
     global = updateEphemeralMessage(global, {
       ...message,
       isDeleting: true,

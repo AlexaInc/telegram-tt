@@ -268,6 +268,7 @@ export type GlobalState = {
     byChatId: Record<string, {
       byId: Record<number, ApiMessage>;
       ephemeralById: Record<number, ApiMessage>;
+      anchoredById: Record<number, ApiMessage>;
       summaryById: Record<number, TextSummary>;
       threadsById: Record<ThreadId, Thread>;
     }>;
