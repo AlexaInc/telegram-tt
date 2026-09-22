@@ -443,6 +443,14 @@
   }
 }
 
+.minimized.withBackground {
+  grid-template-rows: auto 1fr;
+}
+
+.plain.minimized.withBackground {
+  padding-top: 4.25rem;
+}
+
 .title {
   @include mixins.with-vt-type('profileAvatar');
 
@@ -552,7 +560,7 @@
   transition: height 0.25s;
 }
 
-.hasMusic.plain.minimized .standaloneAvatar {
+.hasMusic.plain.minimized:not(.withBackground) .standaloneAvatar {
   margin-top: 2.75rem;
 }
 

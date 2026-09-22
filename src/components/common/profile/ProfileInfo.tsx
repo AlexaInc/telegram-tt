@@ -494,6 +494,7 @@ const ProfileInfo = ({
         styles.root,
         !isExpanded && styles.minimized,
         isPlain && styles.plain,
+        hasPatternBackground && styles.withBackground,
         savedMusic && styles.hasMusic,
       )}
       style={buildStyle(
