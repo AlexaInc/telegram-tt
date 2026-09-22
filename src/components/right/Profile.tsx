@@ -1271,7 +1271,7 @@ const Profile = ({
                 <Button
                   className={styles.showMoreChannels}
                   onClick={() => openPremiumModal()}
-                  iconName="unlock-badge"
+                  iconName="unlock-filled"
                   iconAlignment="end"
                 >
                   {oldLang('UnlockSimilar')}
@@ -1303,7 +1303,7 @@ const Profile = ({
             ))}
             {!isCurrentUserPremium && (
               <>
-                <Button className={styles.showMoreBots} onClick={() => openPremiumModal()} iconName="unlock-badge">
+                <Button className={styles.showMoreBots} onClick={() => openPremiumModal()} iconName="unlock-filled">
                   {lang('UnlockMoreSimilarBots')}
                 </Button>
                 <div className={styles.moreSimilar}>

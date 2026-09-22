@@ -2727,7 +2727,7 @@ const Composer = ({
                   onActivate={handleActivateBotCommandMenu}
                   ariaLabel="Open bot command keyboard"
                 >
-                  <Icon name="menu" />
+                  <Icon name="hamburger" />
                 </ResponsiveHoverButton>
               )}
               {canShowSendAs && sendAsPeer && (
@@ -2894,7 +2894,7 @@ const Composer = ({
                         color="translucent"
                         onClick={handleAllScheduledClick}
                         ariaLabel={lang('AriaComposerOpenScheduled')}
-                        iconName="scheduled"
+                        iconName="schedule"
                       />
                     )}
                     {Boolean(autoDeletePeriod) && (
@@ -2916,7 +2916,7 @@ const Composer = ({
                         className="composer-action-button"
                         color="translucent"
                         onClick={handleGiftClick}
-                        iconName="closed-gift"
+                        iconName="gift"
                       />
                     )}
                     {shouldShowSuggestedPostButton && (
@@ -3078,7 +3078,7 @@ const Composer = ({
         <Icon name="round-video" />
         {onForward && <Icon name="forward" className="main-button-state-icon" />}
         {isInMessageList && <Icon name="schedule" className="main-button-state-icon" />}
-        {isInMessageList && <Icon name="check-bold" className="main-button-state-icon" />}
+        {isInMessageList && <Icon name="check" className="main-button-state-icon" />}
         {shouldRenderPaidStars && (
           <div ref={paidStarsRef} className="paidStars">
             <Icon name="star" />

@@ -479,10 +479,10 @@ const MessageContextMenu = ({
           </MenuItem>
         )}
         {canFaveSticker && (
-          <MenuItem icon="favorite" onClick={onFaveSticker}>{oldLang('AddToFavorites')}</MenuItem>
+          <MenuItem icon="star-regular" onClick={onFaveSticker}>{oldLang('AddToFavorites')}</MenuItem>
         )}
         {canUnfaveSticker && (
-          <MenuItem icon="favorite" onClick={onUnfaveSticker}>{oldLang('Stickers.RemoveFromFavorites')}</MenuItem>
+          <MenuItem icon="star-regular" onClick={onUnfaveSticker}>{oldLang('Stickers.RemoveFromFavorites')}</MenuItem>
         )}
         {canTranslate && (
           <MenuItem icon="language" onClick={() => onTranslate?.()}>{oldLang('TranslateMessage')}</MenuItem>
@@ -499,21 +499,21 @@ const MessageContextMenu = ({
             submenu={(
               <>
                 <MenuItem
-                  icon={currentTranslationTone === 'neutral' ? 'message-succeeded' : undefined}
+                  icon={currentTranslationTone === 'neutral' ? 'check' : undefined}
                   customIcon={currentTranslationTone !== 'neutral' ? <Icon name="placeholder" /> : undefined}
                   onClick={() => onTranslateWithTone?.('neutral')}
                 >
                   {lang('TranslationToneNeutral')}
                 </MenuItem>
                 <MenuItem
-                  icon={currentTranslationTone === 'formal' ? 'message-succeeded' : undefined}
+                  icon={currentTranslationTone === 'formal' ? 'check' : undefined}
                   customIcon={currentTranslationTone !== 'formal' ? <Icon name="placeholder" /> : undefined}
                   onClick={() => onTranslateWithTone?.('formal')}
                 >
                   {lang('TranslationToneFormal')}
                 </MenuItem>
                 <MenuItem
-                  icon={currentTranslationTone === 'casual' ? 'message-succeeded' : undefined}
+                  icon={currentTranslationTone === 'casual' ? 'check' : undefined}
                   customIcon={currentTranslationTone !== 'casual' ? <Icon name="placeholder" /> : undefined}
                   onClick={() => onTranslateWithTone?.('casual')}
                 >

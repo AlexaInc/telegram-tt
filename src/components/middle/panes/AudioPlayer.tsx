@@ -293,7 +293,7 @@ const AudioPlayer = ({
     if (volume === 0 || isMuted) return 'muted';
     if (volume < 0.3) return 'volume-1';
     if (volume < 0.6) return 'volume-2';
-    return 'volume-3';
+    return 'speaker';
   }, [volume, isMuted]);
 
   if (noUi || !shouldRender) {

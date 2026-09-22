@@ -247,7 +247,7 @@ const EmbeddedMessage = ({
     let icon: IconName | undefined;
     if (senderChat) {
       if (isChatChannel(senderChat)) {
-        icon = 'channel-filled';
+        icon = 'megaphone-filled';
       }
 
       if (isChatGroup(senderChat)) {

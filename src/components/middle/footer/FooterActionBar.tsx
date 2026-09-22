@@ -210,7 +210,7 @@ const FooterActionBar = ({
               color="translucent"
               className={giftClassName}
               ariaLabel={lang('ProfileSendAGift')}
-              iconName="closed-gift"
+              iconName="gift"
               onClick={handleOpenGift}
             />
           </div>

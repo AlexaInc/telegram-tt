@@ -456,7 +456,7 @@ const ChatExtra = ({
         {activeUsernames && renderUsernames(activeUsernames)}
         {description && Boolean(description.length) && (
           <ListItem
-            icon="bio-filled"
+            icon="info-filled"
             iconBg="gray"
             className={styles.description}
             multiline

@@ -401,7 +401,7 @@ const ComposerEmbeddedMessage = (props: OwnProps & StateProps) => {
             {isForwardingRendering && (
               <>
                 <MenuItem
-                  icon={!noAuthors ? 'message-succeeded' : undefined}
+                  icon={!noAuthors ? 'check' : undefined}
                   customIcon={noAuthors ? <Icon name="placeholder" /> : undefined}
 
                   onClick={() => setForwardNoAuthors({
@@ -411,7 +411,7 @@ const ComposerEmbeddedMessage = (props: OwnProps & StateProps) => {
                   {oldLang(frozenForwardedMessagesCount > 1 ? 'ShowSenderNames' : 'ShowSendersName')}
                 </MenuItem>
                 <MenuItem
-                  icon={noAuthors ? 'message-succeeded' : undefined}
+                  icon={noAuthors ? 'check' : undefined}
                   customIcon={!noAuthors ? <Icon name="placeholder" /> : undefined}
 
                   onClick={() => setForwardNoAuthors({
@@ -424,7 +424,7 @@ const ComposerEmbeddedMessage = (props: OwnProps & StateProps) => {
                   <>
                     <MenuSeparator />
                     <MenuItem
-                      icon={!noCaptions ? 'message-succeeded' : undefined}
+                      icon={!noCaptions ? 'check' : undefined}
                       customIcon={noCaptions ? <Icon name="placeholder" /> : undefined}
 
                       onClick={() => setForwardNoCaptions({
@@ -435,7 +435,7 @@ const ComposerEmbeddedMessage = (props: OwnProps & StateProps) => {
                         ? 'Conversation.ForwardOptions.ShowCaption' : 'ShowCaption')}
                     </MenuItem>
                     <MenuItem
-                      icon={noCaptions ? 'message-succeeded' : undefined}
+                      icon={noCaptions ? 'check' : undefined}
                       customIcon={!noCaptions ? <Icon name="placeholder" /> : undefined}
 
                       onClick={() => setForwardNoCaptions({

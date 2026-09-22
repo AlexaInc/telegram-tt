@@ -481,7 +481,7 @@ const RichEditorToolbar = ({ editor, isEnabled }: OwnProps) => {
                   {lang('RichEditorListNumberingType')}
                 </NestedMenuItem>
                 <MenuItem
-                  icon={currentList?.isReversed ? 'check' : 'sort'}
+                  icon={currentList?.isReversed ? 'check' : 'hamburger'}
                   disabled={currentList?.type !== 'orderedList'}
                   onClick={handleToggleCurrentOrderedListReversed}
                 >

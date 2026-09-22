@@ -1,4 +1,3 @@
-import type { FC } from '../../lib/teact/teact';
 import {
   memo, useCallback, useMemo, useRef, useState,
 } from '../../lib/teact/teact';
@@ -89,7 +88,7 @@ interface StateProps {
   currentTone?: TranslationTone;
 }
 
-const HeaderActions: FC<OwnProps & StateProps> = ({
+const HeaderActions = ({
   chatId,
   threadId,
   noMenu,
@@ -120,7 +119,7 @@ const HeaderActions: FC<OwnProps & StateProps> = ({
   isAccountFrozen,
   currentTone,
   onTopicSearch,
-}) => {
+}: OwnProps & StateProps) => {
   const {
     openMiddleSearch,
     requestMasterAndRequestCall,
@@ -268,8 +267,8 @@ const HeaderActions: FC<OwnProps & StateProps> = ({
     'Mod+F': handleHotkeySearchClick,
   }), []));
 
-  const MoreMenuButton: FC<{ onTrigger: () => void; isOpen?: boolean }> = useMemo(() => {
-    return ({ onTrigger, isOpen }) => (
+  const MoreMenuButton = useMemo(() => {
+    return ({ onTrigger, isOpen }: { onTrigger: () => void; isOpen?: boolean }) => (
       <Button
         round
         ripple={isRightColumnShown}
@@ -303,21 +302,21 @@ const HeaderActions: FC<OwnProps & StateProps> = ({
             submenu={(
               <>
                 <MenuItem
-                  icon={currentTone === 'neutral' ? 'message-succeeded' : undefined}
+                  icon={currentTone === 'neutral' ? 'check' : undefined}
                   customIcon={currentTone !== 'neutral' ? <Icon name="placeholder" /> : undefined}
                   onClick={() => handleSetTone('neutral')}
                 >
                   {lang('TranslationToneNeutral')}
                 </MenuItem>
                 <MenuItem
-                  icon={currentTone === 'formal' ? 'message-succeeded' : undefined}
+                  icon={currentTone === 'formal' ? 'check' : undefined}
                   customIcon={currentTone !== 'formal' ? <Icon name="placeholder" /> : undefined}
                   onClick={() => handleSetTone('formal')}
                 >
                   {lang('TranslationToneFormal')}
                 </MenuItem>
                 <MenuItem
-                  icon={currentTone === 'casual' ? 'message-succeeded' : undefined}
+                  icon={currentTone === 'casual' ? 'check' : undefined}
                   customIcon={currentTone !== 'casual' ? <Icon name="placeholder" /> : undefined}
                   onClick={() => handleSetTone('casual')}
                 >

@@ -839,7 +839,7 @@ const MessageInput = ({
                 )}
                 dir="auto"
               >
-                {isMainInputLocked && <Icon name="lock-badge" className="placeholder-icon" />}
+                {isMainInputLocked && <Icon name="lock-filled" className="placeholder-icon" />}
                 {placeholder}
                 {isStoryInput && isNeedPremium && (
                   <Button className="unlock-button" size="tiny" color="adaptive" onClick={handleOpenPremiumModal}>

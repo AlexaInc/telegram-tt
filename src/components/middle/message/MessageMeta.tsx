@@ -188,7 +188,7 @@ const MessageMeta = ({
           <span className="message-views" title={viewsTitle}>
             {formatIntegerCompact(lang, message.viewsCount)}
           </span>
-          <Icon name="channelviews" />
+          <Icon name="eye" />
         </>
       )}
       {!noReplies && Boolean(repliesThreadInfo?.messagesCount) && (
@@ -200,7 +200,7 @@ const MessageMeta = ({
         </span>
       )}
       {isPinned && (
-        <Icon name="pinned-message" className="message-pinned" />
+        <Icon name="pin-filled" className="message-pinned" />
       )}
       {signature && (
         <span className="message-signature">{renderText(signature)}</span>

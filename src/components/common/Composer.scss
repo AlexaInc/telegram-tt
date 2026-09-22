@@ -87,7 +87,7 @@
     .icon-schedule,
     .icon-forward,
     .main-button-microphone,
-    .icon-check-bold,
+    .icon-check,
     .icon-view-once,
     .icon-one-filled {
       position: absolute;
@@ -106,7 +106,7 @@
 
       .main-button-microphone,
       .icon-forward,
-      .icon-check-bold,
+      .icon-check,
       .icon-schedule {
         animation: hide-icon 0.4s forwards ease-out;
       }
@@ -118,7 +118,7 @@
       }
 
       .main-button-microphone,
-      .icon-check-bold,
+      .icon-check,
       .icon-forward,
       .icon-new-send {
         animation: hide-icon 0.4s forwards ease-out;
@@ -131,7 +131,7 @@
       }
 
       .icon-new-send,
-      .icon-check-bold,
+      .icon-check,
       .icon-forward,
       .icon-schedule {
         animation: hide-icon 0.4s forwards ease-out;
@@ -155,7 +155,7 @@
     }
 
     &.edit {
-      .icon-check-bold {
+      .icon-check {
         animation: grow-icon 0.4s ease-out;
       }
 
@@ -173,7 +173,7 @@
       }
 
       .icon-new-send,
-      .icon-check-bold,
+      .icon-check,
       .main-button-microphone,
       .icon-schedule {
         animation: hide-icon 0.4s forwards ease-out;
@@ -206,7 +206,7 @@
   body.no-message-composer-animations & > .Button {
     .icon-new-send,
     .main-button-microphone,
-    .icon-check-bold,
+    .icon-check,
     .icon-round-video,
     .icon-schedule {
       animation-duration: 0ms !important;

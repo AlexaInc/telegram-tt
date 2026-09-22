@@ -468,7 +468,7 @@ const CustomEmojiPicker = ({
         onClick={() => selectStickerSet(isRecent ? 0 : index)}
       >
         {withCover && isRecent ? (
-          <Icon name="recent" />
+          <Icon name="clock" />
         ) : withCover ? (
           <StickerSetCover
             stickerSet={stickerSet as ApiStickerSet}

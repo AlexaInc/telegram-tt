@@ -298,7 +298,7 @@ const Video = <T,>({
       {isProtected && <span className="protector" />}
       <Icon
         ref={playButtonRef}
-        name="large-play"
+        name="play"
         className={buildClassName(mediaStyles.controlButton, mediaStyles.playButton)}
       />
       <MediaSpoiler
