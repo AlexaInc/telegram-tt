@@ -1546,6 +1546,7 @@ addActionHandler('markChatMessagesRead', async (global, actions, payload): Promi
 
     if (!result?.topics?.length) return;
 
+    global = getGlobal();
     const topicIdsToMarkRead: number[] = [];
     result.topics.forEach((topicWithState) => {
       global = updateTopicWithState(global, id, topicWithState);
