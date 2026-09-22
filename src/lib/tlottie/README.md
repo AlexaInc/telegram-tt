@@ -4,7 +4,7 @@ Lottie renderer used for `.tgs` stickers and animated emoji, running inside medi
 
 `tlottie.wasm` and `tlottie-no-simd.wasm` are prebuilt binaries vendored from
 [dkaraush/tlottie](https://github.com/dkaraush/tlottie) (MIT License), commit
-[`56fa5c0`](https://github.com/dkaraush/tlottie/commit/56fa5c094f4bc1f982b263136557e5550559d07a),
+[`92df98d`](https://github.com/dkaraush/tlottie/commit/92df98dc209bc39b1e567ec74a8c86a0af5239de),
 and built with its `release-nostd` Cargo profile. The media worker downloads the baseline SIMD build when supported
 and otherwise uses the no-SIMD fallback.
 
