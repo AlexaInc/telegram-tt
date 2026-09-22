@@ -1,5 +1,7 @@
 import type { ElementRef, TeactNode } from '../../lib/teact/teact';
-import { getIsHeavyAnimating, memo, useRef } from '../../lib/teact/teact';
+import {
+  getIsHeavyAnimating, memo, useMemo, useRef,
+} from '../../lib/teact/teact';
 import { getActions, getGlobal } from '../../global';
 
 import type { ApiMessage } from '../../api/types';
@@ -154,6 +156,10 @@ const MessageListContent = ({
 
   const messagesContainerRef = useRef<HTMLDivElement>();
   const prevContentHeightRef = useRef<number>();
+  const addedMessageIdSet = useMemo(
+    () => addedMessageIds && new Set(addedMessageIds),
+    [addedMessageIds],
+  );
 
   const handleContentResize = useLastCallback((entry: ResizeObserverEntry) => {
     const newHeight = entry.contentRect.height;
@@ -355,7 +361,7 @@ const MessageListContent = ({
             observeIntersectionForPlaying={observeIntersectionForPlaying}
             memoFirstUnreadIdRef={memoFirstUnreadIdRef}
             appearanceOrder={messageCountToAnimate - ++appearanceIndex}
-            isJustAdded={addedMessageIds?.includes(message.id)}
+            isJustAdded={addedMessageIdSet?.has(message.id)}
             isLastInList={isLastInList}
             getIsMessageListReady={getIsReady}
             onMessageUnmount={onMessageUnmount}
@@ -388,8 +394,8 @@ const MessageListContent = ({
           const key = isServiceNotificationMessage(message)
             ? `${message.date}_${originalId}` : originalId;
           const shouldShowGuestAvatar = isPrivate && !withUsers && Boolean(message.guestChatViaId);
-          const isJustAdded = addedMessageIds?.includes(message.id)
-            || Boolean(album?.messages.some(({ id }) => addedMessageIds?.includes(id)));
+          const isJustAdded = addedMessageIdSet?.has(message.id)
+            || Boolean(album?.messages.some(({ id }) => addedMessageIdSet?.has(id)));
 
           return compact([
             message.id === memoUnreadDividerBeforeIdRef.current && unreadDivider,

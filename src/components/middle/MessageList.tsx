@@ -19,6 +19,7 @@ import {
 } from '../../config';
 import { forceMeasure, forceMutation, requestMeasure, requestMutation } from '../../lib/fasterdom/fasterdom';
 import {
+  getApplicableRestrictionReasons,
   getIsSavedDialog,
   getMessageHtmlId,
   getMessageOriginalId,
@@ -54,8 +55,7 @@ import {
   selectUser,
   selectUserFullInfo,
 } from '../../global/selectors';
-import { selectIsChatRestricted } from '../../global/selectors/chats';
-import { selectActiveRestrictionReasons, selectCurrentMessageList } from '../../global/selectors/messages';
+import { selectCurrentMessageList } from '../../global/selectors/messages';
 import {
   selectLastScrollOffset,
   selectScrollOffset,
@@ -145,8 +145,8 @@ type StateProps = {
   ephemeralById?: Record<number, ApiMessage>;
   firstUnreadId?: number;
   isViewportNewest?: boolean;
-  isRestricted?: boolean;
   restrictionReasons?: ApiRestrictionReason[];
+  ignoreRestrictionReasons?: string[];
   focusingId?: number;
   isSelectModeActive?: boolean;
   lastMessage?: ApiMessage;
@@ -253,8 +253,8 @@ const MessageList = ({
   firstUnreadId,
   isComments,
   isViewportNewest,
-  isRestricted,
-  restrictionReasons,
+  restrictionReasons: rawRestrictionReasons,
+  ignoreRestrictionReasons,
   isEmptyThread,
   focusingId,
   isSelectModeActive,
@@ -287,6 +287,11 @@ const MessageList = ({
     loadViewportMessages, setScrollOffset, loadSponsoredMessages, loadMessageReactions, copyMessagesByIds,
     loadMessageViews, loadPeerStoriesByIds, loadFactChecks, requestChatTranslation,
   } = getActions();
+
+  const restrictionReasons = useMemo(() => getApplicableRestrictionReasons(
+    rawRestrictionReasons, ignoreRestrictionReasons,
+  ), [ignoreRestrictionReasons, rawRestrictionReasons]);
+  const isRestricted = restrictionReasons.length > 0;
 
   const containerRef = useRef<HTMLDivElement>();
 
@@ -839,8 +844,9 @@ const MessageList = ({
       return;
     }
 
+    const renderMessageIdSet = new Set(renderMessageIds);
     const preservedItemElements = listItemElementsRef.current
-      .filter((element) => renderMessageIds.includes(Number(element.dataset.messageId)));
+      .filter((element) => renderMessageIdSet.has(Number(element.dataset.messageId)));
 
     // We avoid the very first item as it may be a partly-loaded album
     // and also because it may be removed when messages limit is reached
@@ -1440,8 +1446,6 @@ export default memo(withGlobal<OwnProps>(
       return { currentUserId } as Complete<StateProps>;
     }
 
-    const isRestricted = selectIsChatRestricted(global, chatId);
-    const restrictionReasons = selectActiveRestrictionReasons(global, chat?.restrictionReasons);
     const lastMessage = type === 'thread' ? selectChatLastMessage(global, chatId, isSavedDialog ? 'saved' : 'all')
       : undefined;
     const focusingId = selectFocusedMessageId(global, chatId);
@@ -1487,8 +1491,8 @@ export default memo(withGlobal<OwnProps>(
       isActive,
       areAdsEnabled,
       isChatLoaded: true,
-      isRestricted,
-      restrictionReasons,
+      restrictionReasons: chat.restrictionReasons,
+      ignoreRestrictionReasons: global.appConfig.ignoreRestrictionReasons,
       isChannelChat: isChatChannel(chat),
       isChatMonoforum: isChatMonoforum(chat),
       isGroupChat: isChatGroup(chat),
