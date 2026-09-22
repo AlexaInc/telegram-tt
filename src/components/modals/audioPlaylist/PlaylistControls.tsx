@@ -2,8 +2,7 @@ import { memo } from '../../../lib/teact/teact';
 import { getActions, withGlobal } from '../../../global';
 
 import type { ApiAudio, ApiMessage, ApiPeer } from '../../../api/types';
-import type { OrderMode, RepeatMode, ThreadId,
-} from '../../../types';
+import type { OrderMode, PlaybackItemRef, RepeatMode, ThreadId } from '../../../types';
 import { ApiMediaFormat } from '../../../api/types';
 
 import {
@@ -11,10 +10,11 @@ import {
 } from '../../../global/helpers';
 import { getPeerTitle } from '../../../global/helpers/peers';
 import {
-  selectActiveDownloads, selectChatMessage, selectIsChatProtected, selectSender, selectTabState,
+  selectActiveDownloads, selectCanForwardMessage, selectChatMessageOrEphemeral, selectIsMessageProtected, selectSender,
+  selectTabState,
 } from '../../../global/selectors';
 import {
-  selectCanGoNext, selectCanGoPrev, selectCurrentSavedMusicAudio, selectPlaybackSource,
+  selectCanGoNext, selectCanGoPrev, selectPlaybackMedia, selectPlaybackSource,
 } from '../../../global/selectors/audioPlayer';
 import { getProgressSignal } from '../../../util/audioPlayback/playbackController';
 import buildClassName from '../../../util/buildClassName';
@@ -58,7 +58,9 @@ type StateProps = {
   savedMusicById?: Record<string, true>;
   isSavedMusicLoading?: boolean;
   isDownloading?: boolean;
-  isChatProtected?: boolean;
+  canForwardMessage?: boolean;
+  isMessageProtected?: boolean;
+  playbackItem?: PlaybackItemRef;
   savedMusicPeerId?: string;
   threadId?: ThreadId;
 };
@@ -76,7 +78,9 @@ const PlaylistControls = ({
   savedMusicById,
   isSavedMusicLoading,
   isDownloading,
-  isChatProtected,
+  canForwardMessage,
+  isMessageProtected,
+  playbackItem,
   savedMusicPeerId,
   threadId,
   onPlayPause,
@@ -103,10 +107,8 @@ const PlaylistControls = ({
 
   const isMusicSaved = Boolean(audio && savedMusicById?.[audio.id]);
   const canSaveToProfile = Boolean(audio && (!message || !isMessageLocal(message)) && savedMusicById);
-  const canShareTrack = Boolean(
-    audio && message && !isMessageLocal(message) && !isChatProtected && !message.isProtected,
-  );
-  const canDownload = Boolean(audio) && (!message || canShareTrack);
+  const canShareTrack = Boolean(audio && canForwardMessage);
+  const canDownload = Boolean(audio) && (!message || (!isMessageLocal(message) && !isMessageProtected));
   const canForward = canShareTrack || Boolean(savedMusicPeerId && audio);
 
   const title = audio ? (audio.title || audio.fileName) : (sender && getPeerTitle(oldLang, sender));
@@ -133,15 +135,14 @@ const PlaylistControls = ({
 
   const handleForward = useLastCallback(() => {
     closeAudioPlaylistModal();
-    if (message) {
-      openForwardMenu({ fromChatId: message.chatId, messageIds: [message.id] });
+
+    const isWholeMessage = playbackItem?.type === 'message' && !playbackItem.documentId;
+    if (isWholeMessage) {
+      openForwardMenu({ fromChatId: message!.chatId, messageIds: [message!.id] });
       return;
     }
 
-    openForwardMenu({
-      fromChatId: savedMusicPeerId!,
-      savedMusic: { peerId: savedMusicPeerId!, audioId: audio!.id },
-    });
+    openForwardMenu({ fromChatId: message?.chatId || savedMusicPeerId!, audioItem: playbackItem });
   });
 
   const handleDownload = useLastCallback(() => {
@@ -349,8 +350,9 @@ export default memo(withGlobal<OwnProps>(
   (global): Complete<StateProps> => {
     const { activeItem } = selectTabState(global).audioPlayer;
     const message = activeItem?.type === 'message'
-      ? selectChatMessage(global, activeItem.chatId, activeItem.messageId) : undefined;
-    const audio = message ? getMessageContent(message).audio : selectCurrentSavedMusicAudio(global);
+      ? selectChatMessageOrEphemeral(global, activeItem.chatId, activeItem.messageId) : undefined;
+    const playbackMedia = selectPlaybackMedia(global, activeItem);
+    const audio = playbackMedia?.mediaType === 'audio' ? playbackMedia : undefined;
     const source = selectPlaybackSource(global);
 
     return {
@@ -364,9 +366,11 @@ export default memo(withGlobal<OwnProps>(
       savedMusicById: global.users.savedMusicById,
       isSavedMusicLoading: global.users.isSavedMusicLoading,
       isDownloading: audio && getIsDownloading(selectActiveDownloads(global), audio),
-      isChatProtected: message && selectIsChatProtected(global, message.chatId),
+      canForwardMessage: message && selectCanForwardMessage(global, message),
+      isMessageProtected: selectIsMessageProtected(global, message),
+      playbackItem: activeItem,
       savedMusicPeerId: source?.type === 'savedMusic' ? source.peerId : undefined,
-      threadId: source?.type === 'chat' ? source.threadId : undefined,
+      threadId: source?.type === 'chat' || source?.type === 'richMessage' ? source.threadId : undefined,
     };
   },
 )(PlaylistControls));

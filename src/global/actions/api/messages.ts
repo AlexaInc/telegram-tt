@@ -134,6 +134,7 @@ import {
 } from '../../reducers/threads';
 import {
   selectCanForwardMessage,
+  selectCanForwardMessages,
   selectChat,
   selectChatFullInfo,
   selectChatLastMessageId,
@@ -179,6 +180,7 @@ import {
   selectViewportIds,
   selectWebPage,
 } from '../../selectors';
+import { makeTrackKeyFromItem, selectPlaybackMedia } from '../../selectors/audioPlayer';
 import {
   selectDraft,
   selectEditingId,
@@ -190,7 +192,6 @@ import {
   selectThreadLocalStateParam,
   selectThreadReadState,
 } from '../../selectors/threads';
-import { selectUserSavedMusic } from '../../selectors/users';
 import {
   deleteEphemeralMessagesWithAnimation, deleteMessages, updateWithLocalMedia,
 } from '../apiUpdaters/messages';
@@ -218,7 +219,7 @@ const TTL_CLEANUP_DELAY_BUFFER = SECOND_IN_MS;
 const uploadProgressCallbacks = new Map<MessageKey, ApiOnProgress>();
 
 const ttlCleanupTimersByChatId = new Map<string, { timer: number; expiresAt: number }>();
-const savedMusicForwardTokens = new Map<number, symbol>();
+const audioForwardTokens = new Map<number, symbol>();
 
 const runDebouncedForMarkRead = debounce((cb) => cb(), 500, false);
 
@@ -405,22 +406,33 @@ addActionHandler('loadMessage', async (global, actions, payload): Promise<void> 
   setGlobal(global);
 });
 
+const richMessageLoads = new Map<string, Promise<void>>();
+
 addActionHandler('loadRichMessage', async (global, actions, payload): Promise<void> => {
-  const {
-    chatId, messageId, isScheduled,
-  } = payload;
+  const { chatId, messageId, isScheduled } = payload;
 
   const chat = selectChat(global, chatId);
   if (!chat) {
     return;
   }
 
+  // Several callers (expanding, copying, playing) may request the same message while a load is pending
+  const loadKey = `${chatId}-${messageId}${isScheduled ? '-scheduled' : ''}`;
+  let load = richMessageLoads.get(loadKey);
+  if (!load) {
+    load = fetchAndStoreRichMessage(chat, messageId, isScheduled).finally(() => richMessageLoads.delete(loadKey));
+    richMessageLoads.set(loadKey, load);
+  }
+  await load;
+});
+
+async function fetchAndStoreRichMessage(chat: ApiChat, messageId: number, isScheduled?: boolean) {
   const result = await callApi('fetchRichMessage', { chat, messageId });
   if (!result) {
     return;
   }
 
-  global = getGlobal();
+  let global = getGlobal();
   const currentMessage = isScheduled
     ? selectScheduledMessage(global, chat.id, messageId)
     : selectChatMessage(global, chat.id, messageId);
@@ -441,7 +453,7 @@ addActionHandler('loadRichMessage', async (global, actions, payload): Promise<vo
     ? updateScheduledMessage(global, chat.id, messageId, updatedMessage)
     : updateChatMessage(global, chat.id, messageId, updatedMessage);
   setGlobal(global);
-});
+}
 
 addActionHandler('startEditingMessage', async (global, actions, payload): Promise<void> => {
   const { messageId, tabId = getCurrentTabId() } = payload;
@@ -3448,32 +3460,40 @@ addActionHandler('forwardStory', (global, actions, payload): ActionReturnType =>
   setGlobal(global);
 });
 
-addActionHandler('forwardSavedMusic', async (global, actions, payload): Promise<void> => {
+addActionHandler('forwardAudio', async (global, actions, payload): Promise<void> => {
   const {
     toChatId, toThreadId = MAIN_THREAD_ID, confirmedStars, tabId = getCurrentTabId(),
   } = payload;
 
-  const { savedMusic } = selectTabState(global, tabId).forwardMessages;
+  const { audioItem } = selectTabState(global, tabId).forwardMessages;
   const toChat = selectChat(global, toChatId);
-  const audio = savedMusic && selectUserSavedMusic(global, savedMusic.peerId)?.byId[savedMusic.audioId];
-  if (!toChat || !audio) {
+  if (!toChat || !audioItem) {
     return;
   }
 
-  const forwardToken = Symbol('savedMusicForward');
-  savedMusicForwardTokens.set(tabId, forwardToken);
+  const forwardToken = Symbol('audioForward');
+  audioForwardTokens.set(tabId, forwardToken);
 
   const messagePriceInStars = await getPeerStarsForMessage(global, toChatId);
 
   global = getGlobal();
-  if (savedMusicForwardTokens.get(tabId) !== forwardToken) {
+  if (audioForwardTokens.get(tabId) !== forwardToken) {
     return;
   }
-  const currentSavedMusic = selectTabState(global, tabId).forwardMessages.savedMusic;
-  if (currentSavedMusic?.peerId !== savedMusic.peerId || currentSavedMusic.audioId !== savedMusic.audioId) {
+  const currentItem = selectTabState(global, tabId).forwardMessages.audioItem;
+  if (!currentItem || makeTrackKeyFromItem(currentItem) !== makeTrackKeyFromItem(audioItem)) {
     return;
   }
-  savedMusicForwardTokens.delete(tabId);
+  audioForwardTokens.delete(tabId);
+
+  // Resolved after the await, since the source message may have changed meanwhile
+  const media = selectPlaybackMedia(global, audioItem);
+  const audio = media?.mediaType === 'audio' ? media : undefined;
+  const canForward = audioItem.type !== 'message'
+    || selectCanForwardMessages(global, audioItem.chatId, [audioItem.messageId]);
+  if (!audio || !canForward) {
+    return;
+  }
 
   if (messagePriceInStars) {
     const shouldAutoApprove = global.settings.byKey.shouldPaidMessageAutoApprove;
@@ -3481,7 +3501,7 @@ addActionHandler('forwardSavedMusic', async (global, actions, payload): Promise<
       global = updateTabState(global, {
         forwardMessages: {
           ...selectTabState(global, tabId).forwardMessages,
-          savedMusicPendingSend: { toChatId, toThreadId, stars: messagePriceInStars },
+          audioPendingSend: { toChatId, toThreadId, stars: messagePriceInStars },
         },
       }, tabId);
       setGlobal(global);
@@ -3508,13 +3528,9 @@ addActionHandler('forwardSavedMusic', async (global, actions, payload): Promise<
 
   actions.showNotification({
     message: toChatId === global.currentUserId ? {
-      key: 'FwdMessagesToSaved',
-      options: { withNodes: true, withMarkdown: true, pluralValue: 1 },
-    } : {
-      key: 'FwdMessagesToChats',
-      variables: { count: 1 },
-      options: { pluralValue: 1 },
-    },
+      key: 'AudioForwardedToSaved',
+      options: { withNodes: true, withMarkdown: true },
+    } : { key: 'AudioForwardedToChat' },
     tabId,
   });
 

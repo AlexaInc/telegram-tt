@@ -64,7 +64,7 @@ const AttachmentAudio = ({
   return (
     <TrackRow
       theme={theme}
-      variant="search"
+      variant="attachment"
       className={className}
       audio={audio}
       trackKey={trackKey}

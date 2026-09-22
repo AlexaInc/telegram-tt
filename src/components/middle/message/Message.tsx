@@ -1116,6 +1116,7 @@ const Message = ({
           noAvatars={noAvatars}
           canAutoLoadMedia={canAutoLoadMedia}
           isProtected={isProtected}
+          noPlaylist={isScheduled}
           theme={theme}
           observeIntersectionForLoading={observeIntersectionForLoading}
           observeIntersectionForPlaying={observeIntersectionForPlaying}

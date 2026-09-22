@@ -76,10 +76,8 @@ addActionHandler('playNextTrack', (global, actions, payload): ActionReturnType =
   }
 
   if (selectIsShuffling(global, tabId)) {
-    if (!selectShuffleState(global, tabId)) {
-      global = buildShufflePlaylist(global, actions, tabId);
-      if (!selectShuffleState(global, tabId)) return global;
-    }
+    global = buildShufflePlaylist(global, tabId);
+    if (!selectShuffleState(global, tabId)) return global;
 
     return playNextShuffled(global, actions, isAuto, tabId);
   }
@@ -272,6 +270,20 @@ function openTrack<T extends GlobalState>(
         tabId,
       });
       break;
+    case 'richMessage':
+      if (typeof key !== 'string') return;
+      playbackController.prepareTrackSwitch(makeMessageTrackKey(source.chatId, source.messageId, key));
+      actions.openAudioPlayer({
+        item: {
+          type: 'message',
+          chatId: source.chatId,
+          threadId: source.threadId,
+          messageId: source.messageId,
+          documentId: key,
+        },
+        tabId,
+      });
+      break;
     default:
       break;
   }
@@ -409,10 +421,13 @@ function loadMorePlaylistIfNeeded<T extends GlobalState>(
 addActionHandler('loadShufflePlaylist', (global, actions, payload): ActionReturnType => {
   const { tabId = getCurrentTabId() } = payload || {};
 
-  return buildShufflePlaylist(global, actions, tabId);
+  global = buildShufflePlaylist(global, tabId);
+  loadMoreForShuffleIfNeeded(global, actions, tabId);
+
+  return global;
 });
 
-function buildShufflePlaylist<T extends GlobalState>(global: T, actions: RequiredGlobalActions, tabId: number): T {
+function buildShufflePlaylist<T extends GlobalState>(global: T, tabId: number): T {
   const keys = selectPlaylistKeys(global, tabId);
   const currentKey = selectCurrentPlaylistKey(global, tabId);
   if (!keys || currentKey === undefined) return global;
@@ -420,13 +435,9 @@ function buildShufflePlaylist<T extends GlobalState>(global: T, actions: Require
   const shuffle = selectShuffleState(global, tabId);
   const areAllLoaded = selectIsPlaylistFullyLoaded(global, tabId);
 
-  global = shuffle
+  return shuffle
     ? appendShufflePlaylist(global, keys, areAllLoaded, tabId)
     : initShuffleState(global, keys, currentKey, areAllLoaded, tabId);
-
-  loadMoreForShuffleIfNeeded(global, actions, tabId);
-
-  return global;
 }
 
 function playNextShuffled<T extends GlobalState>(

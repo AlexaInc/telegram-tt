@@ -156,6 +156,7 @@ const TrackRow = ({
   const { isMobile } = useAppLayout();
   const [isActivated, setIsActivated] = useState(false);
   const isInOneTimeModal = variant === 'oneTimeModal';
+  const shouldRenderWithTitle = variant === 'search' || variant === 'attachment';
 
   const handleTrackChange = useLastCallback(() => {
     setIsActivated(false);
@@ -326,7 +327,7 @@ const TrackRow = ({
     isInOneTimeModal && 'non-interactive',
     variant === 'inline' && 'inline',
     isOwn && variant === 'inline' && 'own',
-    (variant === 'search' || variant === 'sharedMedia') && 'bigger',
+    (shouldRenderWithTitle || variant === 'sharedMedia') && 'bigger',
     isSelected && 'audio-is-selected',
     contextMenuAnchor && 'has-menu-open',
   );
@@ -458,8 +459,8 @@ const TrackRow = ({
           iconName={isDownloading ? 'close' : 'arrow-down'}
         />
       )}
-      {variant === 'search' && renderWithTitle()}
-      {variant !== 'search' && audio && renderAudio(
+      {shouldRenderWithTitle && renderWithTitle()}
+      {!shouldRenderWithTitle && audio && renderAudio(
         lang,
         oldLang,
         audio,

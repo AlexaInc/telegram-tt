@@ -3,15 +3,18 @@ import { getActions, withGlobal } from '../../../global';
 
 import type { ApiAudio, ApiPeer } from '../../../api/types';
 import type { TabState } from '../../../global/types';
-import type { PlaybackSource, PlaylistKey } from '../../../types';
+import type { PlaybackItemRef, PlaybackSource, PlaylistKey } from '../../../types';
 import { MAIN_THREAD_ID } from '../../../api/types';
 import { LoadMoreDirection } from '../../../types';
 
 import { requestMeasure, requestMutation } from '../../../lib/fasterdom/fasterdom';
 import { getPeerTitle } from '../../../global/helpers/peers';
-import { selectPeer, selectTabState } from '../../../global/selectors';
+import {
+  selectChatMessageOrEphemeral, selectIsMessageProtected, selectPeer, selectTabState,
+} from '../../../global/selectors';
 import {
   selectCurrentPlaylistKey, selectPlaybackItem, selectPlaybackMedia, selectPlaybackSource, selectPlaylistKeys,
+  selectRichMessageAudios,
 } from '../../../global/selectors/audioPlayer';
 import { selectUserSavedMusic } from '../../../global/selectors/users';
 import { ensureAudioContext } from '../../../util/audioPlayback/audioAnalyser';
@@ -28,6 +31,7 @@ import useLastCallback from '../../../hooks/useLastCallback';
 import useReorderableList from '../../../hooks/useReorderableList';
 
 import Icon from '../../common/icons/Icon';
+import PlayableAudio from '../../common/PlayableAudio';
 import ProfileMusic from '../../common/ProfileMusic';
 import Island from '../../gili/layout/Island';
 import InfiniteScroll from '../../ui/InfiniteScroll';
@@ -54,6 +58,8 @@ type StateProps = {
   isPlaylistLoaded?: boolean;
   isAudioTrack?: boolean;
   isSavedMusicStatusLoaded?: boolean;
+  richMessageAudioById?: Record<string, ApiAudio>;
+  isRichMessageProtected?: boolean;
 };
 
 const AudioPlaylistModal = ({
@@ -70,6 +76,8 @@ const AudioPlaylistModal = ({
   isPlaylistLoaded,
   isAudioTrack,
   isSavedMusicStatusLoaded,
+  richMessageAudioById,
+  isRichMessageProtected,
 }: OwnProps & StateProps) => {
   const {
     closeAudioPlaylistModal, openAudioPlayer, searchChatMediaMessages, loadSavedMusic, searchMessagesGlobal,
@@ -98,6 +106,21 @@ const AudioPlaylistModal = ({
 
     return isChatSource ? playlistIds.slice().reverse() : playlistIds.slice();
   }, [playlistIds, isChatSource, source?.type, savedMusicById]);
+
+  const richMessageTracks = useMemo(() => {
+    if (source?.type !== 'richMessage' || !richMessageAudioById) return undefined;
+
+    return new Map(Object.values(richMessageAudioById).map((audio) => [audio.id, {
+      audio,
+      item: {
+        type: 'message',
+        chatId: source.chatId,
+        threadId: source.threadId,
+        messageId: source.messageId,
+        documentId: audio.id,
+      } satisfies PlaybackItemRef,
+    }]));
+  }, [source, richMessageAudioById]);
 
   const loadMoreChatTracks = useLastCallback((direction: LoadMoreDirection) => {
     if (source?.type !== 'chat' || messageId === undefined) return;
@@ -262,6 +285,23 @@ const AudioPlaylistModal = ({
     );
   }
 
+  function renderRichMessageTrack(trackId: PlaylistKey) {
+    const track = typeof trackId === 'string' ? richMessageTracks?.get(trackId) : undefined;
+    if (!track || source?.type !== 'richMessage') return undefined;
+
+    return (
+      <PlayableAudio
+        audio={track.audio}
+        item={track.item}
+        source={source}
+        variant="sharedMedia"
+        noProgress
+        withPlayingRing
+        canDownload={!isRichMessageProtected}
+      />
+    );
+  }
+
   function renderSavedMusicTrack(trackId: PlaylistKey) {
     if (source?.type !== 'savedMusic') return undefined;
 
@@ -306,6 +346,17 @@ const AudioPlaylistModal = ({
       });
     });
   }, [shouldShowModal, currentKey, viewportIds]);
+
+  function renderTrack(trackId: PlaylistKey) {
+    switch (source?.type) {
+      case 'savedMusic':
+        return renderSavedMusicTrack(trackId);
+      case 'richMessage':
+        return renderRichMessageTrack(trackId);
+      default:
+        return renderMessageTrack(trackId);
+    }
+  }
 
   const hasList = Boolean(displayedIds && displayedIds.length > 1);
 
@@ -391,7 +442,7 @@ const AudioPlaylistModal = ({
                 )}
                 data-track-id={trackId}
               >
-                {source?.type === 'savedMusic' ? renderSavedMusicTrack(trackId) : renderMessageTrack(trackId)}
+                {renderTrack(trackId)}
               </div>
             ))}
           </InfiniteScroll>
@@ -416,6 +467,8 @@ export default memo(withGlobal<OwnProps>(
     const source = selectPlaybackSource(global);
     const savedMusic = source?.type === 'savedMusic' ? selectUserSavedMusic(global, source.peerId) : undefined;
     const currentMedia = selectPlaybackMedia(global, selectPlaybackItem(global));
+    const richMessage = source?.type === 'richMessage'
+      ? selectChatMessageOrEphemeral(global, source.chatId, source.messageId) : undefined;
 
     return {
       source,
@@ -430,6 +483,9 @@ export default memo(withGlobal<OwnProps>(
       isPlaylistLoaded: source?.type !== 'savedMusic' || Boolean(savedMusic?.isLoaded),
       isAudioTrack: currentMedia?.mediaType === 'audio',
       isSavedMusicStatusLoaded: Boolean(global.users.savedMusicById),
+      richMessageAudioById: source?.type === 'richMessage'
+        ? selectRichMessageAudios(global, source.chatId, source.messageId)?.byId : undefined,
+      isRichMessageProtected: richMessage && selectIsMessageProtected(global, richMessage),
     };
   },
 )(AudioPlaylistModal));

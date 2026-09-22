@@ -451,8 +451,8 @@ export type TabState = {
     fromChatId?: string;
     messageIds?: number[];
     storyId?: number;
-    savedMusic?: { peerId: string; audioId: string };
-    savedMusicPendingSend?: { toChatId: string; toThreadId?: ThreadId; stars: number };
+    audioItem?: PlaybackItemRef;
+    audioPendingSend?: { toChatId: string; toThreadId?: ThreadId; stars: number };
     toChatId?: string;
     toThreadId?: ThreadId;
     withMyScore?: boolean;

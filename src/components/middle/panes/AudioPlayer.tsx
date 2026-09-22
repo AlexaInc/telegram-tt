@@ -807,7 +807,8 @@ export default withGlobal<OwnProps>(
     } = selectTabState(global).audioPlayer;
     const { volume } = global.audioPlayer;
 
-    const mediaDuration = message
+    const isRichMessageTrack = item?.type === 'message' && Boolean(item.documentId);
+    const mediaDuration = message && !isRichMessageTrack
       ? selectMessageMediaDuration(global, message)
       : media?.duration;
     const playbackSource = selectPlaybackSource(global);

@@ -2,22 +2,16 @@ import { memo, useMemo } from '../../lib/teact/teact';
 import { getActions, withGlobal } from '../../global';
 
 import type { ApiAudio } from '../../api/types';
-import type { ThemeKey } from '../../types';
+import type { PlaybackItemRef, PlaybackSource } from '../../types';
 import type { MenuItemContextAction } from '../ui/ListItem';
-import { ApiMediaFormat } from '../../api/types';
 
-import { getIsDownloading, getMediaFormat, getMediaHash } from '../../global/helpers';
-import { selectActiveDownloads, selectTheme } from '../../global/selectors';
-import { getPlaybackCapabilities } from '../../global/selectors/audioPlayer';
-import { makeSavedMusicTrackKey } from '../../util/audioPlayback/mediaPool';
-import * as playbackController from '../../util/audioPlayback/playbackController';
+import { getIsDownloading } from '../../global/helpers';
+import { selectActiveDownloads } from '../../global/selectors';
 
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
-import useMedia from '../../hooks/useMedia';
-import useMediaWithLoadProgress from '../../hooks/useMediaWithLoadProgress';
 
-import TrackRow from './TrackRow';
+import PlayableAudio from './PlayableAudio';
 
 type OwnProps = {
   audio: ApiAudio;
@@ -28,13 +22,10 @@ type OwnProps = {
 };
 
 type StateProps = {
-  theme: ThemeKey;
   isDownloading: boolean;
   isSaved?: boolean;
   isSavedMusicLoading?: boolean;
 };
-
-const SAVED_MUSIC_CAPABILITIES = getPlaybackCapabilities('savedMusic');
 
 const ProfileMusic = ({
   audio,
@@ -42,35 +33,18 @@ const ProfileMusic = ({
   className,
   noProgress,
   withPlayingRing,
-  theme,
   isDownloading,
   isSaved,
   isSavedMusicLoading,
 }: OwnProps & StateProps) => {
   const {
-    cancelMediaDownload, downloadMedia, toggleMusicInProfile, openAudioPlayer, openForwardMenu,
+    cancelMediaDownload, downloadMedia, toggleMusicInProfile, openForwardMenu,
   } = getActions();
 
   const lang = useLang();
 
-  const trackKey = makeSavedMusicTrackKey(peerId, audio.id);
-
-  const coverBlobUrl = useMedia(getMediaHash(audio, 'pictogram'), false, ApiMediaFormat.BlobUrl);
-  const mediaData = useMedia(getMediaHash(audio, 'inline'), false, getMediaFormat(audio, 'inline'));
-
-  const { loadProgress: downloadProgress } = useMediaWithLoadProgress(
-    getMediaHash(audio, 'download'),
-    !isDownloading,
-    getMediaFormat(audio, 'download'),
-  );
-
-  const handleBeforePlay = useLastCallback(() => {
-    playbackController.prepareTrackSwitch(trackKey);
-    openAudioPlayer({
-      item: { type: 'savedMusic', peerId, audioId: audio.id },
-      source: { type: 'savedMusic', peerId },
-    });
-  });
+  const item = useMemo<PlaybackItemRef>(() => ({ type: 'savedMusic', peerId, audioId: audio.id }), [peerId, audio.id]);
+  const source = useMemo<PlaybackSource>(() => ({ type: 'savedMusic', peerId }), [peerId]);
 
   const handleToggleInProfile = useLastCallback(() => {
     toggleMusicInProfile({ audio });
@@ -85,7 +59,7 @@ const ProfileMusic = ({
   });
 
   const handleForward = useLastCallback(() => {
-    openForwardMenu({ fromChatId: peerId, savedMusic: { peerId, audioId: audio.id } });
+    openForwardMenu({ fromChatId: peerId, audioItem: item });
   });
 
   const contextActions = useMemo((): MenuItemContextAction[] => [{
@@ -106,25 +80,16 @@ const ProfileMusic = ({
   }], [lang, isDownloading, isSaved, isSavedMusicLoading]);
 
   return (
-    <TrackRow
-      theme={theme}
+    <PlayableAudio
+      audio={audio}
+      item={item}
+      source={source}
       variant="sharedMedia"
       className={className}
-      audio={audio}
-      trackKey={trackKey}
-      mediaType="audio"
-      capabilities={SAVED_MUSIC_CAPABILITIES}
-      src={mediaData}
-      originalDuration={audio.duration}
-      coverBlobUrl={coverBlobUrl}
       noProgress={noProgress}
       withPlayingRing={withPlayingRing}
-      isDownloading={isDownloading}
       canDownload
-      downloadProgress={downloadProgress}
       contextActions={contextActions}
-      onBeforePlay={handleBeforePlay}
-      onDownloadClick={handleDownloadClick}
     />
   );
 };
@@ -132,7 +97,6 @@ const ProfileMusic = ({
 export default memo(withGlobal<OwnProps>(
   (global, { audio }): Complete<StateProps> => {
     return {
-      theme: selectTheme(global),
       isDownloading: getIsDownloading(selectActiveDownloads(global), audio),
       isSaved: global.users.savedMusicById?.[audio.id],
       isSavedMusicLoading: global.users.isSavedMusicLoading,

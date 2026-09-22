@@ -1,5 +1,6 @@
 export type TrackKey =
   | `msg:${string}:${number}`
+  | `msg:${string}:${number}:${string}`
   | `savedMusic:${string}:${string}`
   | `iv:${string}:${string}`
   | `draft:${string}`;
@@ -108,8 +109,8 @@ function destroyElement(element: HTMLAudioElement) {
   destroyListeners.forEach((listener) => listener(element));
 }
 
-export function makeMessageTrackKey(chatId: string, messageId: number): TrackKey {
-  return `msg:${chatId}:${messageId}`;
+export function makeMessageTrackKey(chatId: string, messageId: number, documentId?: string): TrackKey {
+  return documentId ? `msg:${chatId}:${messageId}:${documentId}` : `msg:${chatId}:${messageId}`;
 }
 
 export function makeSavedMusicTrackKey(peerId: string, audioId: string): TrackKey {

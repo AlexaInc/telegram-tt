@@ -213,6 +213,13 @@ addActionHandler('openAudioPlayer', (global, actions, payload): ActionReturnType
     });
   }
 
+  if (effectiveSource?.type === 'richMessage') {
+    const { chatId, messageId } = effectiveSource;
+    if (selectChatMessage(global, chatId, messageId)?.content.richMessage?.isPart) {
+      actions.loadRichMessage({ chatId, messageId });
+    }
+  }
+
   global = updateTabState(global, {
     audioPlayer: {
       ...selectTabState(global, tabId).audioPlayer,
@@ -581,7 +588,7 @@ addActionHandler('openReplyMenu', (global, actions, payload): ActionReturnType =
 
 addActionHandler('openForwardMenu', (global, actions, payload): ActionReturnType => {
   const {
-    fromChatId, messageIds, storyId, savedMusic, groupedId, withMyScore, tabId = getCurrentTabId(),
+    fromChatId, messageIds, storyId, audioItem, groupedId, withMyScore, tabId = getCurrentTabId(),
   } = payload;
   let groupedMessageIds;
   if (groupedId) {
@@ -589,13 +596,16 @@ addActionHandler('openForwardMenu', (global, actions, payload): ActionReturnType
   }
   const resolvedMessageIds = groupedMessageIds || messageIds;
   if (resolvedMessageIds && !selectCanForwardMessages(global, fromChatId, resolvedMessageIds)) return;
+  if (audioItem?.type === 'message' && !selectCanForwardMessages(global, audioItem.chatId, [audioItem.messageId])) {
+    return;
+  }
 
   return updateTabState(global, {
     forwardMessages: {
       fromChatId,
       messageIds: resolvedMessageIds,
       storyId,
-      savedMusic,
+      audioItem,
       withMyScore,
     },
     isShareMessageModalShown: true,
@@ -639,9 +649,9 @@ addActionHandler('setForwardNoCaptions', (global, actions, payload): ActionRetur
   }, tabId);
 });
 
-addActionHandler('clearSavedMusicPendingSend', (global, actions, payload): ActionReturnType => {
+addActionHandler('clearAudioPendingSend', (global, actions, payload): ActionReturnType => {
   const { tabId = getCurrentTabId() } = payload || {};
-  const { savedMusicPendingSend, ...forwardMessages } = selectTabState(global, tabId).forwardMessages;
+  const { audioPendingSend, ...forwardMessages } = selectTabState(global, tabId).forwardMessages;
 
   return updateTabState(global, { forwardMessages }, tabId);
 });

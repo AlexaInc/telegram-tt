@@ -2325,6 +2325,8 @@ export interface LangPair {
   'RankEditSave': undefined;
   'RankEditTextOwn': undefined;
   'MenuAddCaption': undefined;
+  'AudioForwardedToChat': undefined;
+  'AudioForwardedToSaved': undefined;
   'MenuCopyDate': undefined;
   'DateCopiedToast': undefined;
   'ReminderSetToast': undefined;

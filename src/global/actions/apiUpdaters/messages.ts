@@ -791,21 +791,24 @@ addActionHandler('apiUpdate', (global, actions, update): ActionReturnType => {
 
         if (tabId === getCurrentTabId()) {
           playbackController.renameTrack(
-            makeMessageTrackKey(chatId, localId),
-            makeMessageTrackKey(chatId, message.id),
+            makeMessageTrackKey(chatId, localId, activeItem.documentId),
+            makeMessageTrackKey(chatId, message.id, activeItem.documentId),
           );
         }
         const { voice, video } = message.content;
+        const nextSource = source?.type === 'richMessage' && source.messageId === localId
+          ? { ...source, messageId: message.id }
+          : source;
         global = updateTabState(global, {
           audioPlayer: {
             ...selectTabState(global, tabId).audioPlayer,
             activeItem: { ...activeItem, messageId: message.id },
-            source: source?.type === 'single' ? {
+            source: nextSource?.type === 'single' ? {
               type: 'chat',
               chatId,
               threadId: activeItem.threadId,
               mediaType: (voice || video) ? 'voice' : 'audio',
-            } : source,
+            } : nextSource,
           },
         }, tabId);
       });

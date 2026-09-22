@@ -55,7 +55,12 @@ export default function useAudioPlayback({
 
     setIsCurrent(playbackController.getState().trackKey === trackKey);
     return playbackController.subscribe((state) => {
-      setIsCurrent(state.trackKey === trackKey);
+      const isNowCurrent = state.trackKey === trackKey;
+      setIsCurrent(isNowCurrent);
+      if (!isNowCurrent) {
+        setIsPlaying(false);
+        setPlayProgress(0);
+      }
     });
   }, [trackKey]);
 

@@ -134,7 +134,9 @@ import { sendApiUpdate } from '../updates/apiUpdateEmitter';
 import { processMessageAndUpdateThreadInfo } from '../updates/entityProcessor';
 import { processAffectedHistory, updateChannelState } from '../updates/updateManager';
 import { requestChatUpdate } from './chats';
-import { handleGramJsUpdate, invokeRequest, uploadFile } from './client';
+import {
+  handleGramJsUpdate, invokeRequest, repairFileReference, uploadFile,
+} from './client';
 
 const FAST_SEND_TIMEOUT = 1000;
 const INPUT_WAVEFORM_LENGTH = 63;
@@ -608,16 +610,26 @@ export function sendApiMessage(
       suggestedPost: suggestedPostInfo && buildInputSuggestedPost(suggestedPostInfo),
     };
 
+    const sendMedia = (inputMedia: GramJs.TypeInputMedia) => invokeRequest(new GramJs.messages.SendMedia({
+      ...args,
+      media: inputMedia,
+    }), {
+      shouldThrow: true,
+      shouldIgnoreUpdates: true,
+    });
+
     try {
       let update;
       if (media) {
-        update = await invokeRequest(new GramJs.messages.SendMedia({
-          ...args,
-          media,
-        }), {
-          shouldThrow: true,
-          shouldIgnoreUpdates: true,
-        });
+        try {
+          update = await sendMedia(media);
+        } catch (error: any) {
+          if (!audio || !error.errorMessage?.startsWith('FILE_REFERENCE')) throw error;
+          if (!await repairFileReference({ url: `document${audio.id}` })) throw error;
+          const repairedMedia = buildInputMediaDocument(audio);
+          if (!repairedMedia) throw error;
+          update = await sendMedia(repairedMedia);
+        }
       } else {
         update = await invokeRequest(new GramJs.messages.SendMessage({
           ...args,

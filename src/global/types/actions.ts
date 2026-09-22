@@ -2136,7 +2136,7 @@ export interface ActionPayloads {
     fromChatId: string;
     messageIds?: number[];
     storyId?: number;
-    savedMusic?: { peerId: string; audioId: string };
+    audioItem?: PlaybackItemRef;
     groupedId?: string;
     withMyScore?: boolean;
   } & WithTabId;
@@ -2172,8 +2172,8 @@ export interface ActionPayloads {
   forwardStory: {
     toChatId: string;
   } & WithTabId;
-  forwardSavedMusic: { toChatId: string; toThreadId?: ThreadId; confirmedStars?: number } & WithTabId;
-  clearSavedMusicPendingSend: WithTabId | undefined;
+  forwardAudio: { toChatId: string; toThreadId?: ThreadId; confirmedStars?: number } & WithTabId;
+  clearAudioPendingSend: WithTabId | undefined;
 
   // GIFs
   loadSavedGifs: undefined;

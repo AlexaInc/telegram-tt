@@ -45,24 +45,24 @@ export type OwnProps = {
 interface StateProps {
   currentUserId?: string;
   isStory?: boolean;
-  isSavedMusic?: boolean;
+  isAudioTrack?: boolean;
   isForwarding?: boolean;
   fromChatId?: string;
   forwardMessageIds?: number[];
   shouldPaidMessageAutoApprove?: boolean;
-  savedMusicPendingSend?: TabState['forwardMessages']['savedMusicPendingSend'];
+  audioPendingSend?: TabState['forwardMessages']['audioPendingSend'];
 }
 
 const ForwardRecipientPicker = ({
   isOpen,
   currentUserId,
   isStory,
-  isSavedMusic,
+  isAudioTrack,
   isForwarding,
   fromChatId,
   forwardMessageIds,
   shouldPaidMessageAutoApprove,
-  savedMusicPendingSend,
+  audioPendingSend,
 }: OwnProps & StateProps) => {
   const {
     openChatOrTopicWithReplyInDraft,
@@ -71,12 +71,12 @@ const ForwardRecipientPicker = ({
     forwardToSavedMessages,
     forwardToMultipleChats,
     forwardStory,
-    forwardSavedMusic,
+    forwardAudio,
     showNotification,
     copyMessageLink,
     openStarsBalanceModal,
     setPaidMessageAutoApprove,
-    clearSavedMusicPendingSend,
+    clearAudioPendingSend,
   } = getActions();
 
   const lang = useLang();
@@ -92,7 +92,7 @@ const ForwardRecipientPicker = ({
   { recipientId: string; threadId?: ThreadId; stars: number } | undefined
   >();
 
-  const isMultiSelect = isForwarding && !isStory && !isSavedMusic;
+  const isMultiSelect = isForwarding && !isStory && !isAudioTrack;
   const messageCount = forwardMessageIds?.length || 0;
 
   const paidChatsInfo = useMemo(() => {
@@ -154,26 +154,26 @@ const ForwardRecipientPicker = ({
     });
   });
 
-  const sendSavedMusic = useLastCallback((recipientId: string, threadId?: ThreadId, confirmedStars?: number) => {
-    forwardSavedMusic({ toChatId: recipientId, toThreadId: threadId, confirmedStars });
+  const sendAudio = useLastCallback((recipientId: string, threadId?: ThreadId, confirmedStars?: number) => {
+    forwardAudio({ toChatId: recipientId, toThreadId: threadId, confirmedStars });
   });
 
   useEffect(() => {
-    if (!savedMusicPendingSend) return;
+    if (!audioPendingSend) return;
 
     setPendingMusicTarget({
-      recipientId: savedMusicPendingSend.toChatId,
-      threadId: savedMusicPendingSend.toThreadId,
-      stars: savedMusicPendingSend.stars,
+      recipientId: audioPendingSend.toChatId,
+      threadId: audioPendingSend.toThreadId,
+      stars: audioPendingSend.stars,
     });
-    clearSavedMusicPendingSend();
+    clearAudioPendingSend();
     openPaymentConfirm();
-  }, [savedMusicPendingSend]);
+  }, [audioPendingSend]);
 
   const handleSelectRecipient = useCallback((recipientId: string, threadId?: ThreadId) => {
     const isSelf = recipientId === currentUserId;
-    if (isSavedMusic) {
-      sendSavedMusic(recipientId, threadId);
+    if (isAudioTrack) {
+      sendAudio(recipientId, threadId);
       return;
     }
 
@@ -211,7 +211,7 @@ const ForwardRecipientPicker = ({
         openChatOrTopicWithReplyInDraft({ chatId, topicId });
       }
     }
-  }, [currentUserId, isStory, isSavedMusic, oldLang, isForwarding]);
+  }, [currentUserId, isStory, isAudioTrack, oldLang, isForwarding]);
 
   const handleClose = useCallback(() => {
     exitForwardMode();
@@ -322,12 +322,12 @@ const ForwardRecipientPicker = ({
     }
 
     if (pendingMusicTarget) {
-      sendSavedMusic(pendingMusicTarget.recipientId, pendingMusicTarget.threadId, pendingMusicTarget.stars);
+      sendAudio(pendingMusicTarget.recipientId, pendingMusicTarget.threadId, pendingMusicTarget.stars);
       setPendingMusicTarget(undefined);
       return;
     }
 
-    if (isSavedMusic || !selectedIds.length) return;
+    if (isAudioTrack || !selectedIds.length) return;
 
     executeForward();
   });
@@ -466,7 +466,7 @@ const ForwardRecipientPicker = ({
         onSelectedIdsChange={handleSelectedIdsChange}
         onClose={handleClose}
         onCloseAnimationEnd={unmarkIsShown}
-        isForwarding={isForwarding || isSavedMusic}
+        isForwarding={isForwarding || isAudioTrack}
         isNativeDialog
         withFolders
       />
@@ -490,18 +490,18 @@ const ForwardRecipientPicker = ({
 
 export default memo(withGlobal<OwnProps>((global): Complete<StateProps> => {
   const {
-    messageIds, storyId, savedMusic, fromChatId,
+    messageIds, storyId, audioItem, fromChatId,
   } = selectTabState(global).forwardMessages;
   const isForwarding = (messageIds && messageIds.length > 0);
 
   return {
     currentUserId: global.currentUserId,
     isStory: Boolean(storyId),
-    isSavedMusic: Boolean(savedMusic),
+    isAudioTrack: Boolean(audioItem),
     isForwarding,
     fromChatId,
     forwardMessageIds: messageIds,
     shouldPaidMessageAutoApprove: global.settings.byKey.shouldPaidMessageAutoApprove,
-    savedMusicPendingSend: selectTabState(global).forwardMessages.savedMusicPendingSend,
+    audioPendingSend: selectTabState(global).forwardMessages.audioPendingSend,
   };
 })(ForwardRecipientPicker));

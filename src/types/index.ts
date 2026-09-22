@@ -383,7 +383,7 @@ export enum StoryViewerOrigin {
   SearchResult,
 }
 
-export type AudioVariant = 'inline' | 'sharedMedia' | 'search' | 'oneTimeModal';
+export type AudioVariant = 'inline' | 'sharedMedia' | 'search' | 'attachment' | 'oneTimeModal';
 
 export type PlaybackMediaType = 'audio' | 'voice';
 
@@ -391,6 +391,7 @@ export type PlaybackSource =
   | { type: 'chat'; chatId: string; threadId: ThreadId; mediaType: PlaybackMediaType }
   | { type: 'globalSearch'; mediaType: PlaybackMediaType }
   | { type: 'savedMusic'; peerId: string }
+  | { type: 'richMessage'; chatId: string; threadId: ThreadId; messageId: number }
   | { type: 'single' };
 
 export type PlaybackContextType = 'message' | 'savedMusic' | 'instantView';
@@ -398,7 +399,8 @@ export type PlaybackContextType = 'message' | 'savedMusic' | 'instantView';
 export type PlaybackMedia = ApiAudio | ApiVoice | ApiVideo;
 
 export type PlaybackItemRef =
-  | { type: 'message'; chatId: string; threadId: ThreadId; messageId: number }
+  // `documentId` targets an audio block inside a rich message
+  | { type: 'message'; chatId: string; threadId: ThreadId; messageId: number; documentId?: string }
   | { type: 'savedMusic'; peerId: string; audioId: string }
   | { type: 'instantView'; webPageId: string; documentId: string };
 

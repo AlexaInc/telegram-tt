@@ -32,6 +32,7 @@ type OwnProps = {
   noAvatars?: boolean;
   canAutoLoadMedia?: boolean;
   isProtected?: boolean;
+  noPlaylist?: boolean;
   theme: ThemeKey;
   observeIntersectionForLoading?: ObserveFn;
   observeIntersectionForPlaying?: ObserveFn;
@@ -47,6 +48,7 @@ const MessageRichText = ({
   noAvatars,
   canAutoLoadMedia,
   isProtected,
+  noPlaylist,
   theme,
   observeIntersectionForLoading,
   observeIntersectionForPlaying,
@@ -121,6 +123,7 @@ const MessageRichText = ({
           noAvatars={noAvatars}
           canAutoLoadMedia={canAutoLoadMedia}
           isProtected={isProtected}
+          noPlaylist={noPlaylist}
           theme={theme}
           fontSizeAdjust={messageTextSize / RICH_CONTENT_BODY_FONT_SIZE_PX}
           chatId={message.chatId}

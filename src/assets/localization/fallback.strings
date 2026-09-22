@@ -3175,6 +3175,8 @@
 "FwdMessagesToChats_other" = "Message forwarded to {count} chats";
 "FwdMessagesToSaved_one" = "Message forwarded to **Saved Messages**";
 "FwdMessagesToSaved_other" = "Messages forwarded to **Saved Messages**";
+"AudioForwardedToChat" = "Audio forwarded to a chat";
+"AudioForwardedToSaved" = "Audio forwarded to **Saved Messages**";
 "MenuCopyDate" = "Copy Date";
 "DateCopiedToast" = "Date copied to clipboard";
 "ReminderSetToast" = "You set up a reminder in **Saved Messages**";
