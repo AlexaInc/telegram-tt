@@ -30,7 +30,6 @@ import { getPeerTitle } from '../../../global/helpers/peers';
 import buildClassName from '../../../util/buildClassName';
 import { isUserId } from '../../../util/entities/ids';
 import { disableScrolling } from '../../../util/scrollLock';
-import { getServerTime } from '../../../util/serverTime';
 import { REM } from '../../common/helpers/mediaDimensions';
 import renderText from '../../common/helpers/renderText';
 import { getMessageCopyOptions } from './helpers/copyOptions';
@@ -50,7 +49,7 @@ import MenuSeparator from '../../ui/MenuSeparator';
 import NestedMenuItem from '../../ui/NestedMenuItem';
 import Skeleton from '../../ui/placeholder/Skeleton';
 import Transition from '../../ui/Transition';
-import AutoDeleteTimeMenuItem from './AutoDeleteTimeMenuItem';
+import DeleteMenuItem from './DeleteMenuItem';
 import LastEditTimeMenuItem from './LastEditTimeMenuItem';
 import ReactionSelector from './reactions/ReactionSelector';
 import ReadTimeMenuItem from './ReadTimeMenuItem';
@@ -296,10 +295,8 @@ const MessageContextMenu = ({
   );
   const hasPollRestrictionMessage = Boolean(pollSubscriberRestrictionMessage) || Boolean(pollCountryRestrictionMessage);
   const autoDeleteAt = message.ttlPeriod ? message.date + message.ttlPeriod : undefined;
-  const hasAutoDeleteTimer = Boolean(autoDeleteAt && autoDeleteAt > getServerTime());
   const shouldRenderInfoSection = Boolean(
-    canLoadReadDate || shouldRenderShowWhen || isEdited || noForwardsNotice || hasPollRestrictionMessage
-    || hasAutoDeleteTimer,
+    canLoadReadDate || shouldRenderShowWhen || isEdited || noForwardsNotice || hasPollRestrictionMessage,
   );
 
   const [isReady, markIsReady, unmarkIsReady] = useFlag();
@@ -592,7 +589,7 @@ const MessageContextMenu = ({
         {canForward && <MenuItem icon="forward" onClick={onForward}>{oldLang('Forward')}</MenuItem>}
         {canSelect && <MenuItem icon="select" onClick={onSelect}>{oldLang('Common.Select')}</MenuItem>}
         {canReport && <MenuItem icon="flag" onClick={onReport}>{oldLang('lng_context_report_msg')}</MenuItem>}
-        {canDelete && <MenuItem destructive icon="delete" onClick={onDelete}>{oldLang('Delete')}</MenuItem>}
+        {canDelete && <DeleteMenuItem autoDeleteAt={autoDeleteAt} onDelete={onDelete} />}
         {message.isEphemeral && (
           <>
             <MenuSeparator size="thick" />
@@ -669,9 +666,6 @@ const MessageContextMenu = ({
         )}
         {shouldRenderInfoSection && (
           <MenuSeparator size={hasCustomEmoji ? 'thin' : 'thick'} />
-        )}
-        {hasAutoDeleteTimer && (
-          <AutoDeleteTimeMenuItem endsAt={autoDeleteAt!} />
         )}
         {(canLoadReadDate || shouldRenderShowWhen) && (
           <ReadTimeMenuItem

@@ -343,9 +343,10 @@
         calc(
           var(--action-button-size) + var(--composer-row-gap) + var(--composer-pill-padding)
         );
+      // The end side adds the emoji button and the main button gap to the same button, gap and padding
       --rich-editor-inline-end-gap:
         calc(
-          2 * var(--action-button-size) + 2 * var(--composer-row-gap) + var(--composer-pill-padding)
+          var(--rich-editor-inline-start-gap) + var(--action-button-size) + var(--composer-main-button-gap)
         );
 
       .input-scroller {
@@ -440,6 +441,9 @@
 
 .Composer.is-chat-composer {
   --base-height: var(--composer-main-button-height);
+  // Wider than `--composer-row-gap`, so the filled main button reads as far from the emoji glyph
+  // as glyph-only buttons are from each other
+  --composer-main-button-gap: 0.75rem;
 
   @include mixins.composer-pill;
 
@@ -454,7 +458,7 @@
   }
 
   .composer-wrapper {
-    max-width: calc(100% - var(--composer-main-button-width) - var(--composer-row-gap));
+    max-width: calc(100% - var(--composer-main-button-width) - var(--composer-main-button-gap));
     border-radius: 0;
     background: none;
     box-shadow: none;
@@ -470,9 +474,17 @@
 
     gap: var(--composer-row-gap);
 
+    // Buttons inside the slide are not direct flex children, so they need the same gap as the emoji button
+    .composer-action-buttons {
+      gap: var(--composer-row-gap);
+    }
+
     .input-scroller {
       --_scroller-controls-width: calc(var(--action-button-size) + var(--composer-main-button-width));
-      --_scroller-gaps-width: calc(2 * var(--composer-row-gap) + var(--composer-pill-padding) + 0.25rem);
+      --_scroller-gaps-width:
+        calc(
+          var(--composer-row-gap) + var(--composer-main-button-gap) + var(--composer-pill-padding) + 0.25rem
+        );
       --_scroller-right-gap: calc(var(--_scroller-controls-width) + var(--_scroller-gaps-width));
     }
 
@@ -521,7 +533,7 @@
     .rich-editor-button {
       z-index: 2;
       top: 0.25rem;
-      right: calc(-1 * (var(--composer-row-gap) + var(--composer-main-button-width) / 2 + 0.875rem));
+      right: calc(-1 * (var(--composer-main-button-gap) + var(--composer-main-button-width) / 2 + 0.875rem));
     }
   }
 
@@ -547,7 +559,7 @@
 
     z-index: 2;
     overflow: hidden;
-    margin-left: var(--composer-row-gap);
+    margin-left: var(--composer-main-button-gap);
     box-shadow: none;
 
     .icon {

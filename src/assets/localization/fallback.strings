@@ -536,7 +536,7 @@
 "AutoDeleteNever" = "Never";
 "AutoDeleteConfirm" = "Confirm";
 "AutoDeleteSetInfo" = "Messages in this chat are automatically deleted {time} after they are sent.";
-"AutoDeleteIn" = "Auto-deletes in {time}";
+"AutoDeleteIn" = "auto-delete in {time}";
 "AutoDeleteGlobalActionFromYou" = "You set a self-destruct timer for all chats.\nAll new messages in this chat will be automatically deleted {time} after they were sent.";
 "AutoDeleteGlobalAction" = "{from} uses a self-destruct timer for all chats.\nAll new messages in this chat will be automatically deleted {time} after they are sent.";
 "ActionTTLYouChanged" = "You set messages to auto-delete in {time}";
