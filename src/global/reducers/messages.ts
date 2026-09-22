@@ -13,9 +13,8 @@ import type {
 } from '../types';
 import { MAIN_THREAD_ID } from '../../api/types';
 
-import {
-  IS_MOCKED_CLIENT, IS_TEST, MESSAGE_LIST_SLICE, MESSAGE_LIST_VIEWPORT_LIMIT, TMP_CHAT_ID,
-} from '../../config';
+import { DEBUG,
+  IS_MOCKED_CLIENT, IS_TEST, MESSAGE_LIST_SLICE, MESSAGE_LIST_VIEWPORT_LIMIT, TMP_CHAT_ID } from '../../config';
 import { areDeepEqual } from '../../util/areDeepEqual';
 import { addTimestampEntities } from '../../util/dates/timestamp';
 import { getCurrentTabId } from '../../util/establishMultitabRole';
@@ -111,23 +110,66 @@ export function replaceChatMessages<T extends GlobalState>(
   });
 }
 
+type MessageStoreBatch = {
+  source: GlobalState['messages']['byChatId'];
+  copy?: GlobalState['messages']['byChatId'];
+};
+
+let messageStoreBatch: MessageStoreBatch | undefined;
+
+// Updating many chats at once stays linear: `messages.byChatId` is copied once, not on every write.
+// `fn` must be synchronous and must not publish or fork the global it receives.
+export function batchMessageStoreUpdates<T extends GlobalState>(global: T, fn: (global: T) => T): T {
+  if (messageStoreBatch) {
+    return fn(global);
+  }
+
+  const batch: MessageStoreBatch = { source: global.messages.byChatId };
+  messageStoreBatch = batch;
+
+  try {
+    const result = fn(global);
+
+    if (DEBUG && batch.copy && result.messages.byChatId !== batch.copy) {
+      // eslint-disable-next-line no-console
+      console.error('[batchMessageStoreUpdates] `fn` left the batched `byChatId`, so updates were not batched');
+    }
+
+    return result;
+  } finally {
+    messageStoreBatch = undefined;
+  }
+}
+
 export function updateMessageStore<T extends GlobalState>(
   global: T, chatId: string, update: Partial<MessageStoreSections>,
 ): T {
-  const current = global.messages.byChatId[chatId]
+  const { byChatId } = global.messages;
+  const current = byChatId[chatId]
     || { byId: {}, ephemeralById: {}, threadsById: {}, summaryById: {} };
+  const newStore = {
+    ...current,
+    ...update,
+  };
+
+  if (messageStoreBatch && byChatId === messageStoreBatch.copy) {
+    byChatId[chatId] = newStore;
+    return global;
+  }
+
+  const newByChatId = {
+    ...byChatId,
+    [chatId]: newStore,
+  };
+  if (messageStoreBatch && byChatId === messageStoreBatch.source) {
+    messageStoreBatch.copy = newByChatId;
+  }
 
   return {
     ...global,
     messages: {
       ...global.messages,
-      byChatId: {
-        ...global.messages.byChatId,
-        [chatId]: {
-          ...current,
-          ...update,
-        },
-      },
+      byChatId: newByChatId,
     },
   };
 }
