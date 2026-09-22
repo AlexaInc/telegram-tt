@@ -32,7 +32,7 @@ export interface ApiUser {
   hasVideoAvatar?: boolean;
   avatarPhotoId?: string;
   botPlaceholder?: string;
-  canBeInvitedToGroup?: boolean;
+  canBotBeInvitedToGroup?: boolean;
   fakeType?: ApiFakeType;
   isAttachBot?: boolean;
   emojiStatus?: ApiEmojiStatusType;
