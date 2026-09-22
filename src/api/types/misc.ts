@@ -23,6 +23,7 @@ export interface ApiInitialArgs {
   isWebmSupported?: boolean;
   maxBufferSize?: number;
   webAuthToken?: string;
+  webAuthUserId?: string;
   dcId?: number;
   mockScenario?: string;
   shouldAllowHttpTransport?: boolean;

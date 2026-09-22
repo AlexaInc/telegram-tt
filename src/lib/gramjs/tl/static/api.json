@@ -10,6 +10,7 @@
     "auth.exportAuthorization",
     "auth.importAuthorization",
     "auth.importWebTokenAuthorization",
+    "auth.cancelWebTokenAuthorization",
     "auth.bindTempAuthKey",
     "auth.checkPassword",
     "auth.requestPasswordRecovery",

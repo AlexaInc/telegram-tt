@@ -1,3 +1,6 @@
+/* eslint-disable simple-import-sort/imports -- Sanitize and claim URL login before other startup modules */
+import { getPendingWebLogin } from './util/routing';
+import { webLoginHandoffPromise } from './util/webLoginHandoff';
 import './util/handleError';
 import './util/setupServiceWorker';
 import './global/init';
@@ -49,6 +52,7 @@ if (IS_TAURI) {
 const initializationPromise = init();
 
 async function init() {
+  await webLoginHandoffPromise;
   if (DEBUG) {
     // eslint-disable-next-line no-console
     console.log('>>> INIT');
@@ -87,7 +91,8 @@ async function init() {
     getActions()
       .switchMultitabRole({ isMasterTab }, { forceSyncOnIOs: true });
   });
-  const shouldReestablishMasterToSelf = getGlobal().auth.state !== 'authorizationStateReady';
+  const shouldReestablishMasterToSelf = Boolean(getPendingWebLogin())
+    || getGlobal().auth.state !== 'authorizationStateReady';
   establishMultitabRole(shouldReestablishMasterToSelf);
 
   if (DEBUG) {

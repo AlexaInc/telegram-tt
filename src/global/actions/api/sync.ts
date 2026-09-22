@@ -11,6 +11,7 @@ import { init as initFolderManager } from '../../../util/folderManager';
 import {
   buildCollectionByKey, omitUndefined, pick, pickTruthy, unique,
 } from '../../../util/iteratees';
+import { finishWebLogin } from '../../../util/webLogin';
 import { callApi, reconnectApi } from '../../../api/gramjs';
 import { getIsSavedDialog } from '../../helpers';
 import {
@@ -102,6 +103,7 @@ addActionHandler('sync', (global, actions): ActionReturnType => {
         isFetchingDifference: false,
       };
       setGlobal(global);
+      if (global.currentUserId) finishWebLogin(global.currentUserId);
 
       if (DEBUG) {
         // eslint-disable-next-line no-console

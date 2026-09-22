@@ -3249,6 +3249,7 @@
 "SettingsStickersDesc" = "Stickers, Emoji, Reactions";
 "SettingsLanguageDesc" = "{language}, Translate Messages";
 "SettingsSessionsDesc" = "Sessions, Automatically terminate";
+"WebLoginInvalid" = "This login link is invalid or has expired. Open a fresh link or log in normally.";
 "RichButtons" = "Buttons";
 "RichButtonInline" = "Inline Button";
 "RichButtonRow" = "Button Row";

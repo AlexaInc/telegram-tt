@@ -7,7 +7,7 @@ import {
 } from '../../../config';
 import { updateAppBadge } from '../../../util/appBadge';
 import { purgePasscodeCaches } from '../../../util/cacheApi';
-import { getCurrentTabId } from '../../../util/establishMultitabRole';
+import { getCurrentTabId, reestablishMasterToSelf } from '../../../util/establishMultitabRole';
 import { updateFolderManager } from '../../../util/folderManager';
 import { cloneDeep } from '../../../util/iteratees';
 import { clearMemoryCache } from '../../../util/mediaLoader';
@@ -62,6 +62,7 @@ import {
   enableEncryptedSessionStore,
   resetSessionStore,
 } from '../../../util/passcode/sessionStore';
+import { getPendingWebLogin } from '../../../util/routing';
 import { pause } from '../../../util/schedulers';
 import { clearAllStoredSessions, storeSession, updateSessionUserId } from '../../../util/sessions';
 import {
@@ -71,6 +72,8 @@ import {
   restoreWallpaperBlobsFromPasscode,
   syncLockScreenWallpaperBlobs,
 } from '../../../util/wallpaperStorage';
+import { interruptWebLogin } from '../../../util/webLogin';
+import { handoffWebLogin } from '../../../util/webLoginHandoff';
 import { closeApi } from '../../../api/gramjs';
 import {
   cacheGlobalForSlot,
@@ -310,7 +313,9 @@ addActionHandler('unlockScreen', async (global, actions, payload): Promise<void>
 
     if (await hasLegacyEncryptedSession()) {
       if (ACCOUNT_SLOT) {
-        window.location.href = getAccountSlotUrl(1);
+        if (!await handoffWebLogin(getAccountSlotUrl(1))) {
+          window.location.replace(getAccountSlotUrl(1));
+        }
         return;
       }
       await unlockLegacySession(passcode);
@@ -933,11 +938,16 @@ async function applyUnlockedState(
 
   beforeTabStates.forEach(({ id: tabId, isMasterTab }) => actions.init({ tabId, isMasterTab }));
   beforeTabStates.forEach(({ id: tabId }) => actions.setIsUiReady({ uiReadyState: 2, tabId }));
-  if (selectTabState(global, getCurrentTabId())?.isMasterTab) actions.initApi();
+  if (selectTabState(global, getCurrentTabId())?.isMasterTab) {
+    actions.initApi();
+  } else if (getPendingWebLogin()) {
+    reestablishMasterToSelf();
+  }
   forceUpdateCache();
 }
 
 async function lockCurrentTab() {
+  interruptWebLogin();
   setPasscodeSettings({
     isScreenLocked: true,
     invalidAttemptsCount: 0,

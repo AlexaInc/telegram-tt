@@ -1,3 +1,4 @@
+import type { PendingWebLogin } from '../../util/routing';
 import type { SharedState } from '../types';
 import type { ClientBoundMessageEvent, WorkerBoundMessageEvent } from './sharedWorker';
 
@@ -8,6 +9,8 @@ import { deepMerge } from '../../util/deepMerge';
 declare const self: SharedWorkerGlobalScope;
 
 const PASSCODE_NAVIGATION_DEK_LIFETIME_MS = 8000;
+const WEB_LOGIN_LIFETIME_MS = 30000;
+const webLogins = new Map<string, { slot: number; request: PendingWebLogin; expiresAt: number }>();
 
 type PasscodeNavigationDek = {
   dek: ArrayBuffer;
@@ -29,6 +32,22 @@ self.onconnect = (e: MessageEvent) => {
   port.onmessage = (event: MessageEvent<WorkerBoundMessageEvent>) => {
     const data = event.data;
     switch (data.type) {
+      case 'retainWebLogin': {
+        if (webLogins.has(data.id)) break;
+        webLogins.set(data.id, {
+          slot: data.slot, request: data.request, expiresAt: Date.now() + WEB_LOGIN_LIFETIME_MS,
+        });
+        self.setTimeout(() => webLogins.delete(data.id), WEB_LOGIN_LIFETIME_MS);
+        sendToClient(port, { type: 'webLoginRetained', id: data.id });
+        break;
+      }
+      case 'claimWebLogin': {
+        const handoff = webLogins.get(data.id);
+        const canClaim = handoff && handoff.slot === data.slot && handoff.expiresAt > Date.now();
+        if (canClaim) webLogins.delete(data.id);
+        sendToClient(port, { type: 'webLoginClaimed', id: data.id, request: canClaim ? handoff.request : undefined });
+        break;
+      }
       case 'reqGetFullState': {
         const localState = data.localState;
         if (!state) {

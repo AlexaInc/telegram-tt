@@ -2388,6 +2388,7 @@ export interface LangPair {
   'SettingsPerformanceDesc': undefined;
   'SettingsStickersDesc': undefined;
   'SettingsSessionsDesc': undefined;
+  'WebLoginInvalid': undefined;
   'RichButtons': undefined;
   'RichButtonInline': undefined;
   'RichButtonRow': undefined;
