@@ -2817,6 +2817,7 @@ const Composer = ({
           <Button
             round
             faded
+            size="smaller"
             className={buildClassName(
               'rich-editor-button',
               !canToggleRichInput && 'rich-editor-button-hidden',

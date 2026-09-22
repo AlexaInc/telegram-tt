@@ -55,10 +55,9 @@ const useDraft = ({
   const isTouchedRef = useRef(false);
 
   useEffect(() => {
-    const isLocalDraft = draft?.isLocal !== undefined;
     if (
       areDeepEqual(getDraftRichMessage(draft), richMessage)
-      && !isLocalDraft
+      && !draft?.isLocal
     ) {
       isTouchedRef.current = false;
     } else {

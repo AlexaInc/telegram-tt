@@ -521,7 +521,6 @@
       }
     }
 
-    .rich-editor-button,
     .composer-action-button,
     .symbol-menu-button,
     .AttachMenu--button {
@@ -532,8 +531,8 @@
 
     .rich-editor-button {
       z-index: 2;
-      top: 0.25rem;
-      right: calc(-1 * (var(--composer-main-button-gap) + var(--composer-main-button-width) / 2 + 0.875rem));
+      top: 0;
+      right: calc(-1 * (var(--composer-main-button-gap) + var(--composer-main-button-width) / 2 + 1.25rem));
     }
   }
 
@@ -718,9 +717,6 @@
     z-index: 1;
     top: 0.4375rem;
     right: 0.625rem;
-
-    width: 1.75rem;
-    height: 1.75rem;
 
     color: var(--color-composer-button);
 

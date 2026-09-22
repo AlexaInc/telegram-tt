@@ -310,7 +310,7 @@ const RichContent = ({
       case 'heading6':
         return renderTextBlock(block.text, styles.heading4, renderContext, block.type);
       case 'paragraph':
-        return renderTextBlock(block.text, styles.paragraph, renderContext);
+        return renderTextBlock(block.text, styles.paragraph, renderContext, block.type);
       case 'footer':
         return renderTextBlock(block.text, styles.footer, renderContext, block.type);
       case 'preformatted':
@@ -768,7 +768,7 @@ function renderTextBlock(
   context: RenderBlockContext,
   blockType?: ApiPageBlock['type'] | 'tableTitle',
 ) {
-  if (!hasRichText(text)) {
+  if (blockType !== 'paragraph' && !hasRichText(text)) {
     return undefined;
   }
 
