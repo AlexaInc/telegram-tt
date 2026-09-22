@@ -14,7 +14,7 @@ import { cancelScrollBlockingAnimation, isAnimatingScroll } from '../../../util/
 import { IS_TOUCH_ENV } from '../../../util/browser/windowEnvironment';
 import { copyTextToClipboardFromPromise } from '../../../util/clipboard';
 import { getCurrentTabId } from '../../../util/establishMultitabRole';
-import { compact, findLast } from '../../../util/iteratees';
+import { compact } from '../../../util/iteratees';
 import { Bundles, loadBundle } from '../../../util/moduleLoader';
 import {
   getMediaFilename,
@@ -124,7 +124,7 @@ addActionHandler('editLastMessage', (global, actions, payload): ActionReturnType
     return undefined;
   }
 
-  const lastOwnEditableMessageId = findLast(viewportIds, (id) => {
+  const lastOwnEditableMessageId = viewportIds.findLast((id) => {
     return Boolean(chatMessages[id] && selectAllowedMessageActionsSlow(global, chatMessages[id], threadId).canEdit);
   });
 
