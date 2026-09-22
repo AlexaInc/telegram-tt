@@ -52,149 +52,7 @@ export function buildReplyButtons(
   }
 
   const markup = replyMarkup.rows.map(({ buttons }) => {
-    return buttons.map((button): ApiKeyboardButton | undefined => {
-      const { text, style } = button;
-
-      const baseButton = omitUndefined<ApiKeyboardButtonBase>({
-        style: style && buildApiKeyboardButtonStyle(style),
-      });
-
-      if (button instanceof GramJs.KeyboardButton) {
-        return {
-          ...baseButton,
-          type: 'command',
-          text,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonUrl) {
-        return {
-          ...baseButton,
-          type: 'url',
-          text,
-          url: button.url,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonCallback) {
-        if (button.requiresPassword) {
-          return {
-            ...baseButton,
-            type: 'unsupported',
-            text,
-          };
-        }
-
-        return {
-          ...baseButton,
-          type: 'callback',
-          text,
-          data: serializeBytes(button.data),
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonRequestPoll) {
-        return {
-          ...baseButton,
-          type: 'requestPoll',
-          text,
-          isQuiz: button.quiz,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonRequestPhone) {
-        return {
-          ...baseButton,
-          type: 'requestPhone',
-          text,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonBuy) {
-        if (receiptMessageId) {
-          return {
-            ...baseButton,
-            type: 'receipt',
-            receiptMessageId,
-          };
-        }
-        return {
-          ...baseButton,
-          type: 'buy',
-          text,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonGame) {
-        return {
-          ...baseButton,
-          type: 'game',
-          text,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonSwitchInline) {
-        return {
-          ...baseButton,
-          type: 'switchBotInline',
-          text,
-          query: button.query,
-          isSamePeer: button.samePeer,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonUserProfile) {
-        return {
-          ...baseButton,
-          type: 'userProfile',
-          text,
-          userId: button.userId.toString(),
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonSimpleWebView) {
-        return {
-          ...baseButton,
-          type: 'simpleWebView',
-          text,
-          url: button.url,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonWebView) {
-        return {
-          ...baseButton,
-          type: 'webView',
-          text,
-          url: button.url,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonUrlAuth) {
-        return {
-          ...baseButton,
-          type: 'urlAuth',
-          text,
-          url: button.url,
-          buttonId: button.buttonId,
-        };
-      }
-
-      if (button instanceof GramJs.KeyboardButtonCopy) {
-        return {
-          ...baseButton,
-          type: 'copy',
-          text,
-          copyText: button.copyText,
-        };
-      }
-
-      return {
-        ...baseButton,
-        type: 'unsupported',
-        text,
-      };
-    }).filter(Boolean);
+    return buttons.map((button) => buildReplyButton(button, receiptMessageId));
   });
 
   if (markup.every((row) => !row.length)) return undefined;
@@ -206,6 +64,153 @@ export function buildReplyButtons(
       isKeyboardSingleUse: replyMarkup.singleUse,
       isKeyboardSelective: replyMarkup.selective,
     }),
+  };
+}
+
+function buildReplyButton(
+  button: GramJs.KeyboardButton | GramJs.KeyboardInlineButton,
+  receiptMessageId?: number,
+): ApiKeyboardButton {
+  const { text, style, type } = button;
+  const baseButton = omitUndefined<ApiKeyboardButtonBase>({
+    style: style && buildApiKeyboardButtonStyle(style),
+  });
+
+  if (type instanceof GramJs.ButtonTypeDefault) {
+    return {
+      ...baseButton,
+      type: 'command',
+      text,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeUrl) {
+    return {
+      ...baseButton,
+      type: 'url',
+      text,
+      url: type.url,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeCallback) {
+    if (type.requiresPassword) {
+      return {
+        ...baseButton,
+        type: 'unsupported',
+        text,
+      };
+    }
+
+    return {
+      ...baseButton,
+      type: 'callback',
+      text,
+      data: serializeBytes(type.data),
+    };
+  }
+
+  if (type instanceof GramJs.ButtonTypeRequestPoll) {
+    return {
+      ...baseButton,
+      type: 'requestPoll',
+      text,
+      isQuiz: type.quiz,
+    };
+  }
+
+  if (type instanceof GramJs.ButtonTypeRequestPhone) {
+    return {
+      ...baseButton,
+      type: 'requestPhone',
+      text,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeBuy) {
+    if (receiptMessageId) {
+      return {
+        ...baseButton,
+        type: 'receipt',
+        receiptMessageId,
+      };
+    }
+
+    return {
+      ...baseButton,
+      type: 'buy',
+      text,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeGame) {
+    return {
+      ...baseButton,
+      type: 'game',
+      text,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeSwitchInline) {
+    return {
+      ...baseButton,
+      type: 'switchBotInline',
+      text,
+      query: type.query,
+      isSamePeer: type.samePeer,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeUserProfile) {
+    return {
+      ...baseButton,
+      type: 'userProfile',
+      text,
+      userId: type.userId.toString(),
+    };
+  }
+
+  if (type instanceof GramJs.ButtonTypeSimpleWebView) {
+    return {
+      ...baseButton,
+      type: 'simpleWebView',
+      text,
+      url: type.url,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeWebView) {
+    return {
+      ...baseButton,
+      type: 'webView',
+      text,
+      url: type.url,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeUrlAuth) {
+    return {
+      ...baseButton,
+      type: 'urlAuth',
+      text,
+      url: type.url,
+      buttonId: type.buttonId,
+    };
+  }
+
+  if (type instanceof GramJs.InlineButtonTypeCopy) {
+    return {
+      ...baseButton,
+      type: 'copy',
+      text,
+      copyText: type.copyText,
+    };
+  }
+
+  return {
+    ...baseButton,
+    type: 'unsupported',
+    text,
   };
 }
 

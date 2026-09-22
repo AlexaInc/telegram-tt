@@ -159,20 +159,24 @@ export function buildApiMessage(mtpMessage: GramJs.TypeMessage): ApiMessage | un
 }
 
 export function buildApiEphemeralMessage(mtpMessage: GramJs.EphemeralMessage): ApiMessage {
-  const chatId = getApiChatIdFromMtpPeer(mtpMessage.peerId);
   const fromId = getApiChatIdFromMtpPeer(mtpMessage.fromId);
   const receiverId = buildApiPeerId(mtpMessage.receiverId, 'user');
+  const peerId = mtpMessage.peerId || (mtpMessage.out ? buildPeer(receiverId) : mtpMessage.fromId);
+  const chatId = getApiChatIdFromMtpPeer(peerId);
   const message = buildApiMessageWithChatId(chatId, {
     id: getEphemeralMessageId(mtpMessage.id),
     date: mtpMessage.date,
-    peerId: mtpMessage.peerId,
+    peerId,
     fromId: mtpMessage.fromId,
     out: mtpMessage.out,
     message: mtpMessage.message,
     entities: mtpMessage.entities,
     media: mtpMessage.media,
+    richMessage: mtpMessage.richMessage,
     replyMarkup: mtpMessage.replyMarkup,
     replyTo: mtpMessage.replyTo,
+    invertMedia: mtpMessage.invertMedia,
+    noforwards: mtpMessage.noforwards,
   });
 
   return {
