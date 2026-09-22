@@ -47,7 +47,7 @@ import {
   SUPPORTED_VIDEO_CONTENT_TYPES,
   TON_CURRENCY_CODE,
 } from '../../../config';
-import { ensureProtocol, isSuspiciousUrl } from '../../../util/browser/url';
+import { ensureProtocol } from '../../../util/browser/url';
 import { IS_IOS } from '../../../util/browser/windowEnvironment';
 import { copyTextToClipboardFromPromise } from '../../../util/clipboard';
 import { isDeepLink } from '../../../util/deepLinkParser';
@@ -3030,7 +3030,6 @@ addActionHandler('openUrl', async (global, actions, payload): Promise<void> => {
   } = payload;
   const urlWithProtocol = ensureProtocol(url);
   const parsedUrl = new URL(urlWithProtocol);
-  const isSuspicious = isSuspiciousUrl(urlWithProtocol);
 
   if (!ignoreDeepLinks && isDeepLink(urlWithProtocol)) {
     actions.closeStoryViewer({ tabId });
@@ -3084,7 +3083,7 @@ addActionHandler('openUrl', async (global, actions, payload): Promise<void> => {
   const shouldDisplayModal = !urlWithProtocol.match(RE_TELEGRAM_LINK) && !shouldSkipModal && !isWhitelisted;
 
   if (shouldDisplayModal) {
-    actions.toggleSafeLinkModal({ url: isSuspicious ? parsedUrl.toString() : urlWithProtocol, tabId });
+    actions.toggleSafeLinkModal({ url: urlWithProtocol, tabId });
   } else {
     window.open(parsedUrl, '_blank', 'noopener');
   }

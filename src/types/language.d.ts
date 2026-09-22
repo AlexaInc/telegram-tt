@@ -570,6 +570,7 @@ export interface LangPair {
   'AboutPremiumDescription': undefined;
   'AboutPremiumDescription2': undefined;
   'OpenUrlTitle': undefined;
+  'OpenUrlWarning': undefined;
   'OpenUrlConfirm': undefined;
   'BotAuthAppSubtitle': undefined;
   'BotAuthSiteSubtitle': undefined;

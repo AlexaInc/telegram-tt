@@ -655,6 +655,7 @@
 "AboutPremiumDescription2" = "**Telegram Premium** is a paid option, because most Premium Features require additional expenses from Telegram to third parties such as data center providers and server manufacturers. Contributions from **Telegram Premium** users allow us to cover such costs and also help Telegram stay free for everyone.";
 "OpenUrlTitle" = "Open Link";
 "OpenUrlText" = "Do you want to open **{url}**?";
+"OpenUrlWarning" = "This link contains misleading characters or hides its real destination. Be careful when opening it.";
 "OpenUrlConfirm" = "Open";
 "BotAuthTitle" = "Log in to {url}";
 "BotAuthAppSubtitle" = "This app will receive your **name**, **username** and **profile photo**.";
