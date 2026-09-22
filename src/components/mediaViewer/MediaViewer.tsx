@@ -43,7 +43,7 @@ import {
   selectScheduledMessage, selectSponsoredMessage,
   selectTabState,
 } from '../../global/selectors';
-import { stopCurrentAudio } from '../../util/audioPlayer';
+import { stopCurrentAudio } from '../../util/audioPlayback/playbackController';
 import { IS_TAURI } from '../../util/browser/globalEnvironment';
 import { IS_MAC_OS } from '../../util/browser/windowEnvironment';
 import captureKeyboardListeners from '../../util/captureKeyboardListeners';
@@ -748,7 +748,7 @@ export default memo(withGlobal(
 
     if (chatId && threadId && messageId) {
       if (withDynamicLoading && (isOriginInline || isOriginAlbum)) {
-        const currentSearch = selectCurrentChatMediaSearch(global);
+        const currentSearch = selectCurrentChatMediaSearch(global, 'media');
         isLoadingMoreMedia = Boolean(currentSearch?.isLoading);
         const { foundIds } = (currentSearch?.currentSegment) || {};
         collectedMessageIds = foundIds;

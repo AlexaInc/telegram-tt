@@ -77,7 +77,7 @@ export interface ApiAttachment {
   shouldSendAsFile?: true;
   shouldSendAsSpoiler?: true;
 
-  uniqueId?: string;
+  uniqueId: string;
   ttlSeconds?: number;
   isRoundVideo?: boolean;
   shouldSendInHighQuality?: boolean;

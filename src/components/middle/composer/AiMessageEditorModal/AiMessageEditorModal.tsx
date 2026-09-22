@@ -55,12 +55,13 @@ type StateProps = {
   isInScheduledList?: boolean;
   chat?: ApiChat;
   paidMessagesStars?: number;
-  isPaymentMessageConfirmDialogOpen?: boolean;
+  paymentMessageConfirmDialogKey?: string;
   starsBalance: number;
   isStarsBalanceModalOpen?: boolean;
   isStoryViewerOpen?: boolean;
 };
 
+const PAYMENT_DIALOG_KEY = 'aiMessageEditor';
 const INDEX_TO_TAB_ID = ['translate', 'style', 'fix'] as const;
 
 const TAB_TRANSLATE = 0;
@@ -80,7 +81,7 @@ const AiMessageEditorModal = ({
   isInScheduledList,
   chat,
   paidMessagesStars,
-  isPaymentMessageConfirmDialogOpen,
+  paymentMessageConfirmDialogKey,
   starsBalance,
   isStarsBalanceModalOpen,
   isStoryViewerOpen,
@@ -116,7 +117,9 @@ const AiMessageEditorModal = ({
     dialogHandler: confirmModalPayForMessageHandler,
     shouldAutoApprove: shouldPaidMessageAutoApprove,
     setAutoApprove: setShouldPaidMessageAutoApprove,
-  } = usePaidMessageConfirmation(starsForMessage, Boolean(isStarsBalanceModalOpen), starsBalance, true);
+  } = usePaidMessageConfirmation(
+    PAYMENT_DIALOG_KEY, starsForMessage, Boolean(isStarsBalanceModalOpen), starsBalance, true,
+  );
 
   useEffect(() => {
     if (!isCustomSendMenuOpen) {
@@ -361,7 +364,7 @@ const AiMessageEditorModal = ({
       </div>
       {calendar}
       <PaymentMessageConfirmDialog
-        isOpen={Boolean(isPaymentMessageConfirmDialogOpen)}
+        isOpen={paymentMessageConfirmDialogKey === PAYMENT_DIALOG_KEY}
         onClose={closeConfirmModalPayForMessage}
         userName={chat ? getPeerTitle(lang, chat) : undefined}
         messagePriceInStars={paidMessagesStars || 0}
@@ -394,7 +397,7 @@ export default memo(withGlobal<OwnProps>(
       isInScheduledList: currentMessageList?.type === 'scheduled',
       chat,
       paidMessagesStars,
-      isPaymentMessageConfirmDialogOpen: tabState.isPaymentMessageConfirmDialogOpen,
+      paymentMessageConfirmDialogKey: tabState.paymentMessageConfirmDialogKey,
       starsBalance,
       isStarsBalanceModalOpen,
       isStoryViewerOpen: selectIsStoryViewerOpen(global),

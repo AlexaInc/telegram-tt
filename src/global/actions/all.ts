@@ -34,6 +34,7 @@ import './ui/misc';
 import './ui/payments';
 import './ui/calls';
 import './ui/mediaViewer';
+import './ui/audioPlayer';
 import './ui/stars';
 import './ui/reactions';
 import './ui/stories';

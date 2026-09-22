@@ -227,6 +227,11 @@ const AttachmentModal = ({
     return [oneMedia, false];
   }, [renderingAttachments]);
 
+  const areAllItemsAudio = useMemo(() => (
+    Boolean(renderingAttachments?.length
+      && renderingAttachments.every((a) => SUPPORTED_AUDIO_CONTENT_TYPES.has(a.mimeType)))
+  ), [renderingAttachments]);
+
   const [hasSpoiler, isEverySpoiler] = useMemo(() => {
     const areAllSpoilers = Boolean(renderingAttachments?.every((a) => a.shouldSendAsSpoiler));
     if (areAllSpoilers) return [true, true];
@@ -569,6 +574,8 @@ const AttachmentModal = ({
 
   const isQuickGallery = isSendingCompressed && hasOnlyMedia;
 
+  const shouldPreviewAsFile = !isSendingCompressed || areAllItemsAudio;
+
   const {
     areAllPhotos, areAllVideos, areAllAudios, hasAnyPhoto,
   } = useMemo(() => {
@@ -691,7 +698,8 @@ const AttachmentModal = ({
                     ))
                   }
                   {
-                    !shouldForceAsFile && !shouldForceCompression && !hasGifFromPicker && (isSendingCompressed ? (
+                    !shouldForceAsFile && !shouldForceCompression && !hasGifFromPicker && !areAllItemsAudio
+                    && (isSendingCompressed ? (
 
                       <MenuItem icon="document" onClick={handleToggleShouldCompress}>
                         {lang(isMultiple ? 'AttachmentMenuSendAllAsFiles' : 'AttachmentMenuSendAsFiles')}
@@ -789,7 +797,7 @@ const AttachmentModal = ({
           className={buildClassName(
             styles.attachments,
             'custom-scroll',
-            !isSendingCompressed && styles.asFile,
+            shouldPreviewAsFile && styles.asFile,
           )}
         >
           {renderingAttachments.map((attachment, i) => (
@@ -799,7 +807,7 @@ const AttachmentModal = ({
               shouldDisplayGrouped={shouldSendGrouped}
               isSingle={renderingAttachments.length === 1}
               index={i}
-              key={attachment.uniqueId || i}
+              key={attachment.uniqueId}
               onDelete={handleDelete}
               onToggleSpoiler={handleToggleSpoiler}
               onEdit={!isMobile ? handleEdit : undefined}

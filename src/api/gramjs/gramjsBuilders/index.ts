@@ -220,7 +220,7 @@ export function buildInputDocument(media: ApiAudio | ApiSticker | ApiVideo | Api
   ]));
 }
 
-export function buildInputMediaDocument(media: ApiSticker | ApiVideo | ApiDocument, spoiler?: true) {
+export function buildInputMediaDocument(media: ApiAudio | ApiSticker | ApiVideo | ApiDocument, spoiler?: true) {
   const inputDocument = buildInputDocument(media);
 
   if (!inputDocument) {
@@ -339,6 +339,10 @@ function buildInputMediaFromContent(content?: MediaContent) {
 
   if (content.sticker) {
     return buildInputMediaDocument(content.sticker);
+  }
+
+  if (content.audio) {
+    return buildInputMediaDocument(content.audio);
   }
 
   return undefined;

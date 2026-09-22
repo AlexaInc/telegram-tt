@@ -274,8 +274,8 @@ async function loadAndReplaceMessages<T extends GlobalState>(global: T, actions:
   setGlobal(global);
 
   Object.values(global.byTabId).forEach(({ id: tabId }) => {
-    const { chatId: audioChatId, messageId: audioMessageId } = selectTabState(global, tabId).audioPlayer;
-    if (audioChatId && audioMessageId && !selectChatMessage(global, audioChatId, audioMessageId)) {
+    const { activeItem } = selectTabState(global, tabId).audioPlayer;
+    if (activeItem?.type === 'message' && !selectChatMessage(global, activeItem.chatId, activeItem.messageId)) {
       actions.closeAudioPlayer({ tabId });
     }
   });

@@ -253,8 +253,7 @@
   }
 
   &.audioList,
-  &.voiceList,
-  &.playlistList {
+  &.voiceList {
     padding: 1.25rem;
 
     :global(.Audio) {

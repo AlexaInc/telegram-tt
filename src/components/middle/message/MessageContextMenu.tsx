@@ -48,7 +48,6 @@ import MenuItem from '../../ui/MenuItem';
 import MenuSeparator from '../../ui/MenuSeparator';
 import NestedMenuItem from '../../ui/NestedMenuItem';
 import Skeleton from '../../ui/placeholder/Skeleton';
-import Transition from '../../ui/Transition';
 import DeleteMenuItem from './DeleteMenuItem';
 import LastEditTimeMenuItem from './LastEditTimeMenuItem';
 import ReactionSelector from './reactions/ReactionSelector';
@@ -558,26 +557,19 @@ const MessageContextMenu = ({
         {canUnpin && <MenuItem icon="unpin" onClick={onUnpin}>{oldLang('DialogUnpin')}</MenuItem>}
         {canSaveGif && <MenuItem icon="gifs" onClick={onSaveGif}>{oldLang('lng_context_save_gif')}</MenuItem>}
         {canManageMusicInProfile && (
-          <Transition
-            activeKey={!isMusicProfileStatusLoaded ? 0 : (isMusicSaved ? 2 : 1)}
-            name="fade"
-            className="profile-music-menu-item-transition"
-            shouldCleanup
-          >
-            {!isMusicProfileStatusLoaded ? (
-              <MenuItem customIcon={<span className="profile-music-menu-icon-placeholder" />} disabled>
-                <Skeleton className="profile-music-menu-label-placeholder" animation="wave" />
-              </MenuItem>
-            ) : (
-              <MenuItem
-                icon={isMusicSaved ? 'remove-music' : 'add-music'}
-                disabled={isMusicProfileActionLoading}
-                onClick={onToggleMusicInProfile}
-              >
-                {lang(isMusicSaved ? 'AudioRemoveFromProfile' : 'AudioAddToProfile')}
-              </MenuItem>
-            )}
-          </Transition>
+          !isMusicProfileStatusLoaded ? (
+            <MenuItem customIcon={<span className="profile-music-menu-icon-placeholder" />} disabled>
+              <Skeleton className="profile-music-menu-label-placeholder" animation="wave" />
+            </MenuItem>
+          ) : (
+            <MenuItem
+              icon={isMusicSaved ? 'remove-music' : 'add-music'}
+              disabled={isMusicProfileActionLoading}
+              onClick={onToggleMusicInProfile}
+            >
+              {lang(isMusicSaved ? 'AudioRemoveFromProfile' : 'AudioAddToProfile')}
+            </MenuItem>
+          )
         )}
         {canRevote && <MenuItem icon="revote" onClick={onCancelVote}>{oldLang('lng_polls_retract')}</MenuItem>}
         {canClosePoll && <MenuItem icon="stop" onClick={onClosePoll}>{oldLang('lng_polls_stop')}</MenuItem>}

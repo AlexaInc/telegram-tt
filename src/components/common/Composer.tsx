@@ -330,7 +330,7 @@ type StateProps = {
   richMessageMaxTableColumns: number;
   shouldPaidMessageAutoApprove?: boolean;
   isSilentPosting?: boolean;
-  isPaymentMessageConfirmDialogOpen: boolean;
+  paymentMessageConfirmDialogKey?: string;
   starsBalance: number;
   isStarsBalanceModalOpen: boolean;
   disallowedGifts?: ApiDisallowedGifts;
@@ -470,7 +470,7 @@ const Composer = ({
   richMessageMaxMedia,
   richMessageMaxTableColumns,
   isSilentPosting,
-  isPaymentMessageConfirmDialogOpen,
+  paymentMessageConfirmDialogKey,
   starsBalance,
   isStarsBalanceModalOpen,
   disallowedGifts,
@@ -751,6 +751,7 @@ const Composer = ({
     if (!isForwarding || !forwardedMessagesCount) return messagesInInput || 1;
     return forwardedMessagesCount + messagesInInput;
   }, [hasInputContent, hasAttachments, attachments, isForwarding, forwardedMessagesCount]);
+  const paymentDialogKey = `composer-${type}-${messageListType}-${chatId}-${threadId}-${storyId}`;
   const starsForAllMessages = paidMessagesStars ? messagesCount * paidMessagesStars : 0;
 
   const {
@@ -759,7 +760,7 @@ const Composer = ({
     shouldAutoApprove: shouldPaidMessageAutoApprove,
     setAutoApprove: setShouldPaidMessageAutoApprove,
     handleWithConfirmation: handleActionWithPaymentConfirmation,
-  } = usePaidMessageConfirmation(starsForAllMessages, isStarsBalanceModalOpen, starsBalance);
+  } = usePaidMessageConfirmation(paymentDialogKey, starsForAllMessages, isStarsBalanceModalOpen, starsBalance);
 
   const isPaidSendDeferred = starsForAllMessages > 0 && !shouldPaidMessageAutoApprove;
 
@@ -3135,7 +3136,7 @@ const Composer = ({
       )}
       {calendar}
       <PaymentMessageConfirmDialog
-        isOpen={isPaymentMessageConfirmDialogOpen}
+        isOpen={paymentMessageConfirmDialogKey === paymentDialogKey && Boolean(paidMessagesStars)}
         onClose={closeConfirmModalPayForMessage}
         userName={chat ? getPeerTitle(lang, chat) : undefined}
         messagePriceInStars={paidMessagesStars || 0}
@@ -3349,10 +3350,7 @@ export default memo(withGlobal<OwnProps>(
       paidMessagesStars,
       shouldPaidMessageAutoApprove,
       isSilentPosting,
-      isPaymentMessageConfirmDialogOpen: tabState.isPaymentMessageConfirmDialogOpen
-        && !tabState.aiMessageEditorModal
-        && !tabState.pollModal
-        && !tabState.sharePreparedMessageModal,
+      paymentMessageConfirmDialogKey: tabState.paymentMessageConfirmDialogKey,
       starsBalance,
       isStarsBalanceModalOpen,
       shouldDisplayGiftsButton: userFullInfo?.shouldDisplayGiftsButton,

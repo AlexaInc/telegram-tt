@@ -1,9 +1,9 @@
-import type { FC } from '../../lib/teact/teact';
 import {
   memo, useCallback, useEffect, useMemo, useState,
 } from '../../lib/teact/teact';
 import { getActions, getGlobal, withGlobal } from '../../global';
 
+import type { TabState } from '../../global/types';
 import type { ForwardTarget, ThreadId } from '../../types';
 import type { ChatSelectionKey } from '../../util/keys/chatSelectionKey';
 
@@ -45,21 +45,25 @@ export type OwnProps = {
 interface StateProps {
   currentUserId?: string;
   isStory?: boolean;
+  isSavedMusic?: boolean;
   isForwarding?: boolean;
   fromChatId?: string;
   forwardMessageIds?: number[];
   shouldPaidMessageAutoApprove?: boolean;
+  savedMusicPendingSend?: TabState['forwardMessages']['savedMusicPendingSend'];
 }
 
-const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
+const ForwardRecipientPicker = ({
   isOpen,
   currentUserId,
   isStory,
+  isSavedMusic,
   isForwarding,
   fromChatId,
   forwardMessageIds,
   shouldPaidMessageAutoApprove,
-}) => {
+  savedMusicPendingSend,
+}: OwnProps & StateProps) => {
   const {
     openChatOrTopicWithReplyInDraft,
     setForwardChatOrTopic,
@@ -67,10 +71,12 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
     forwardToSavedMessages,
     forwardToMultipleChats,
     forwardStory,
+    forwardSavedMusic,
     showNotification,
     copyMessageLink,
     openStarsBalanceModal,
     setPaidMessageAutoApprove,
+    clearSavedMusicPendingSend,
   } = getActions();
 
   const lang = useLang();
@@ -82,8 +88,11 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
   const [caption, setCaption] = useState('');
   const [isPaymentConfirmOpen, openPaymentConfirm, closePaymentConfirm] = useFlag();
   const [shouldAutoApprove, setShouldAutoApprove] = useState(shouldPaidMessageAutoApprove);
+  const [pendingMusicTarget, setPendingMusicTarget] = useState<
+  { recipientId: string; threadId?: ThreadId; stars: number } | undefined
+  >();
 
-  const isMultiSelect = isForwarding && !isStory;
+  const isMultiSelect = isForwarding && !isStory && !isSavedMusic;
   const messageCount = forwardMessageIds?.length || 0;
 
   const paidChatsInfo = useMemo(() => {
@@ -127,6 +136,7 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
     if (!isOpen) {
       setSelectedIds([]);
       setCaption('');
+      setPendingMusicTarget(undefined);
     }
   }, [isOpen]);
 
@@ -144,8 +154,29 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
     });
   });
 
+  const sendSavedMusic = useLastCallback((recipientId: string, threadId?: ThreadId, confirmedStars?: number) => {
+    forwardSavedMusic({ toChatId: recipientId, toThreadId: threadId, confirmedStars });
+  });
+
+  useEffect(() => {
+    if (!savedMusicPendingSend) return;
+
+    setPendingMusicTarget({
+      recipientId: savedMusicPendingSend.toChatId,
+      threadId: savedMusicPendingSend.toThreadId,
+      stars: savedMusicPendingSend.stars,
+    });
+    clearSavedMusicPendingSend();
+    openPaymentConfirm();
+  }, [savedMusicPendingSend]);
+
   const handleSelectRecipient = useCallback((recipientId: string, threadId?: ThreadId) => {
     const isSelf = recipientId === currentUserId;
+    if (isSavedMusic) {
+      sendSavedMusic(recipientId, threadId);
+      return;
+    }
+
     if (isStory) {
       forwardStory({ toChatId: recipientId });
       const global = getGlobal();
@@ -180,7 +211,7 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
         openChatOrTopicWithReplyInDraft({ chatId, topicId });
       }
     }
-  }, [currentUserId, isStory, oldLang, isForwarding]);
+  }, [currentUserId, isStory, isSavedMusic, oldLang, isForwarding]);
 
   const handleClose = useCallback(() => {
     exitForwardMode();
@@ -273,7 +304,7 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
   });
 
   const handlePaymentConfirm = useLastCallback(() => {
-    const { totalStars } = paidChatsInfo;
+    const totalStars = pendingMusicTarget?.stars ?? paidChatsInfo.totalStars;
     const starsBalance = getGlobal().stars?.balance?.amount || 0;
 
     if (totalStars > starsBalance) {
@@ -289,7 +320,21 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
     if (shouldAutoApprove) {
       setPaidMessageAutoApprove();
     }
+
+    if (pendingMusicTarget) {
+      sendSavedMusic(pendingMusicTarget.recipientId, pendingMusicTarget.threadId, pendingMusicTarget.stars);
+      setPendingMusicTarget(undefined);
+      return;
+    }
+
+    if (isSavedMusic || !selectedIds.length) return;
+
     executeForward();
+  });
+
+  const handlePaymentClose = useLastCallback(() => {
+    closePaymentConfirm();
+    setPendingMusicTarget(undefined);
   });
 
   const viewportFooter = useMemo(() => (
@@ -378,29 +423,33 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
     return undefined;
   }
 
-  const confirmPaymentMessage = paidChatsInfo.totalStars > 0 ? lang(
+  const confirmTotalStars = pendingMusicTarget?.stars ?? paidChatsInfo.totalStars;
+  const confirmChatsCount = pendingMusicTarget ? 1 : paidChatsInfo.paidChatsCount;
+  const confirmMessagesCount = pendingMusicTarget ? 1 : paidChatsInfo.totalMessages;
+
+  const confirmPaymentMessage = confirmTotalStars > 0 ? lang(
     'ForwardPaidChatsConfirmation',
     {
       chatsSelected: lang(
         'ForwardPaidChatsSelected',
-        { paidChatsCount: paidChatsInfo.paidChatsCount },
-        { withNodes: true, withMarkdown: true, pluralValue: paidChatsInfo.paidChatsCount },
+        { paidChatsCount: confirmChatsCount },
+        { withNodes: true, withMarkdown: true, pluralValue: confirmChatsCount },
       ),
       payConfirmation: lang(
         'ForwardPaidChatsPayConfirmation',
         {
-          totalAmount: formatStarsAsText(lang, paidChatsInfo.totalStars),
-          count: paidChatsInfo.totalMessages,
+          totalAmount: formatStarsAsText(lang, confirmTotalStars),
+          count: confirmMessagesCount,
         },
-        { withNodes: true, withMarkdown: true, pluralValue: paidChatsInfo.totalMessages },
+        { withNodes: true, withMarkdown: true, pluralValue: confirmMessagesCount },
       ),
     },
     { withNodes: true },
   ) : undefined;
 
-  const confirmLabel = lang('PayForMessage', { count: paidChatsInfo.totalMessages }, {
+  const confirmLabel = lang('PayForMessage', { count: confirmMessagesCount }, {
     withNodes: true,
-    pluralValue: paidChatsInfo.totalMessages,
+    pluralValue: confirmMessagesCount,
   });
 
   return (
@@ -417,7 +466,7 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
         onSelectedIdsChange={handleSelectedIdsChange}
         onClose={handleClose}
         onCloseAnimationEnd={unmarkIsShown}
-        isForwarding={isForwarding}
+        isForwarding={isForwarding || isSavedMusic}
         isNativeDialog
         withFolders
       />
@@ -425,7 +474,7 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
         title={lang('TitleConfirmPayment')}
         confirmLabel={confirmLabel}
         isOpen={isPaymentConfirmOpen}
-        onClose={closePaymentConfirm}
+        onClose={handlePaymentClose}
         confirmHandler={handlePaymentConfirm}
       >
         {confirmPaymentMessage}
@@ -440,15 +489,19 @@ const ForwardRecipientPicker: FC<OwnProps & StateProps> = ({
 };
 
 export default memo(withGlobal<OwnProps>((global): Complete<StateProps> => {
-  const { messageIds, storyId, fromChatId } = selectTabState(global).forwardMessages;
+  const {
+    messageIds, storyId, savedMusic, fromChatId,
+  } = selectTabState(global).forwardMessages;
   const isForwarding = (messageIds && messageIds.length > 0);
 
   return {
     currentUserId: global.currentUserId,
     isStory: Boolean(storyId),
+    isSavedMusic: Boolean(savedMusic),
     isForwarding,
     fromChatId,
     forwardMessageIds: messageIds,
     shouldPaidMessageAutoApprove: global.settings.byKey.shouldPaidMessageAutoApprove,
+    savedMusicPendingSend: selectTabState(global).forwardMessages.savedMusicPendingSend,
   };
 })(ForwardRecipientPicker));

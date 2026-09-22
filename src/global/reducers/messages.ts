@@ -27,7 +27,12 @@ import {
   getAllMessageMediaHashes,
   getMessageStatefulContent,
   groupMessageIdsByThreadId,
-  hasMessageTtl, isMediaLoadableInViewer, mergeIdRanges, orderHistoryIds, orderPinnedIds,
+  hasMessageTtl,
+  hasWindowedMediaContent,
+  mergeIdRanges,
+  orderHistoryIds,
+  orderPinnedIds,
+  WINDOWED_MEDIA_SEARCH_TYPES,
 } from '../helpers';
 import { getEmojiOnlyCountForMessage } from '../helpers/getEmojiOnlyCountForMessage';
 import {
@@ -411,7 +416,7 @@ export function deleteChatMessages<T extends GlobalState>(
         unload(hash);
       });
     }
-    if (!shouldPreserveMedia && isMediaLoadableInViewer(message)) {
+    if (!shouldPreserveMedia && hasWindowedMediaContent(message)) {
       mediaIdsToRemove.push(messageId);
     }
     const threadId = selectThreadIdFromMessage(global, message);
@@ -469,7 +474,9 @@ export function deleteChatMessages<T extends GlobalState>(
       }
 
       mediaIdsToRemove.forEach((mediaId) => {
-        global = removeIdFromSearchResults(global, chatId, threadId, mediaId, tabId);
+        WINDOWED_MEDIA_SEARCH_TYPES.forEach((mediaType) => {
+          global = removeIdFromSearchResults(global, chatId, threadId, mediaType, mediaId, tabId);
+        });
       });
 
       const viewportIds = selectViewportIds(global, chatId, threadId, tabId);

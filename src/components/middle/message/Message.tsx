@@ -45,7 +45,6 @@ import type {
 } from '../../../types';
 import type { Signal } from '../../../util/signals';
 import { MAIN_THREAD_ID } from '../../../api/types';
-import { AudioOrigin } from '../../../types';
 
 import { EMOJI_STATUS_LOOP_LIMIT, MESSAGE_APPEARANCE_DELAY } from '../../../config';
 import {
@@ -1410,7 +1409,9 @@ const Message = ({
           <Audio
             theme={theme}
             message={message}
-            origin={AudioOrigin.Inline}
+            variant="inline"
+            threadId={threadId}
+            noPlaylist={isScheduled}
             uploadProgress={uploadProgress}
             isSelectable={isInDocumentGroup}
             isSelected={isSelected}

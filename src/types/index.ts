@@ -2,6 +2,7 @@ import type { TeactNode } from '../lib/teact/teact';
 
 import type {
   ApiAttachment,
+  ApiAudio,
   ApiBotInlineMediaResult,
   ApiBotInlineResult,
   ApiBotInlineSwitchPm,
@@ -43,6 +44,7 @@ import type {
   ApiTopic,
   ApiTypingStatus,
   ApiVideo,
+  ApiVoice,
   MediaContent,
   StarGiftAttributeIdModel,
 } from '../api/types';
@@ -381,12 +383,43 @@ export enum StoryViewerOrigin {
   SearchResult,
 }
 
-export enum AudioOrigin {
-  Inline,
-  SharedMedia,
-  Search,
-  OneTimeModal,
-}
+export type AudioVariant = 'inline' | 'sharedMedia' | 'search' | 'oneTimeModal';
+
+export type PlaybackMediaType = 'audio' | 'voice';
+
+export type PlaybackSource =
+  | { type: 'chat'; chatId: string; threadId: ThreadId; mediaType: PlaybackMediaType }
+  | { type: 'globalSearch'; mediaType: PlaybackMediaType }
+  | { type: 'savedMusic'; peerId: string }
+  | { type: 'single' };
+
+export type PlaybackContextType = 'message' | 'savedMusic' | 'instantView';
+
+export type PlaybackMedia = ApiAudio | ApiVoice | ApiVideo;
+
+export type PlaybackItemRef =
+  | { type: 'message'; chatId: string; threadId: ThreadId; messageId: number }
+  | { type: 'savedMusic'; peerId: string; audioId: string }
+  | { type: 'instantView'; webPageId: string; documentId: string };
+
+export type PlaybackCapabilities = {
+  canSeek: boolean;
+  mediaSession: 'own' | 'keep' | 'clear';
+  withAutoAdvance: boolean;
+};
+
+export type RepeatMode = 'none' | 'one' | 'all';
+export type OrderMode = 'default' | 'reverse' | 'shuffle';
+
+export type PlaylistKey = number | string;
+
+export type ShuffleState = {
+  playlist: PlaylistKey[];
+  nonPlayedKeys: PlaylistKey[];
+  playedKeys: PlaylistKey[];
+  indexInPlayed: number;
+  areAllLoaded: boolean;
+};
 
 export enum ChatCreationProgress {
   Idle,
@@ -442,7 +475,6 @@ export type ProfileTabType =
   | 'audio'
   | 'voice'
   | 'gif'
-  | 'playlist'
   | 'stories'
   | 'storiesArchive'
   | 'similarChannels'
@@ -484,6 +516,10 @@ export interface ChatMediaSearchParams {
   currentSegment: ChatMediaSearchSegment;
   segments: ChatMediaSearchSegment[];
   isLoading: boolean;
+  pendingRequest?: {
+    currentMediaMessageId: number;
+    direction?: LoadMoreDirection;
+  };
 }
 
 export enum ProfileState {
@@ -814,6 +850,7 @@ export type SendMessageParams = {
   sticker?: ApiSticker;
   story?: ApiStory | ApiStorySkipped;
   gif?: ApiVideo;
+  audio?: ApiAudio;
   poll?: ApiNewPoll;
   todo?: ApiNewMediaTodo;
   dice?: string;

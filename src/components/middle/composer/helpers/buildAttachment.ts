@@ -83,15 +83,19 @@ export default async function buildAttachment(
 
     previewBlobUrl = await createPosterForVideo(blobUrl);
   } else if (SUPPORTED_AUDIO_CONTENT_TYPES.has(mimeType)) {
-    const {
-      duration, title, performer, coverUrl,
-    } = await parseAudioMetadata(blobUrl);
-    audio = {
-      duration: duration || 0,
-      title,
-      performer,
-    };
-    previewBlobUrl = coverUrl;
+    try {
+      const {
+        duration, title, performer, coverUrl,
+      } = await parseAudioMetadata(blobUrl);
+      audio = {
+        duration: duration || 0,
+        title,
+        performer,
+      };
+      previewBlobUrl = coverUrl;
+    } catch (err) {
+      shouldSendAsFile = true;
+    }
   }
 
   return {
@@ -156,5 +160,6 @@ export function buildGifAttachment(gif: ApiVideo): ApiAttachment {
     mimeType,
     size,
     quick: width && height ? { width, height, duration } : undefined,
+    uniqueId: `gif-${gif.id}-${Date.now()}`,
   } satisfies ApiAttachment;
 }

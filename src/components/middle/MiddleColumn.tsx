@@ -568,7 +568,7 @@ function MiddleColumn({
       )}
       <div id="middle-column-portals" />
       <AudioPlayer
-        className="island-player"
+        isIsland
         isHidden={hasActiveMiddleSearch || isRichInputExpanded || (isTablet && isLeftColumnShown)}
         onPaneStateChange={onPlayerPaneStateChange}
       />

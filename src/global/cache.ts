@@ -46,6 +46,7 @@ import { hasStoredSession } from '../util/sessions';
 import { getSystemTheme } from '../util/systemTheme';
 import { getDefaultPatternColor } from '../util/wallpaper';
 import { migrateLegacyWallpaperBlobs, prefetchWallpaperUrl } from '../util/wallpaperStorage';
+import { buildPageAudioById } from './helpers/buildPageAudioById';
 import { selectSharedSettings } from './selectors/sharedState';
 import { selectThreadInfo } from './selectors/threads';
 import { addActionHandler, getGlobal } from './index';
@@ -311,6 +312,12 @@ function unsafeMigrateCache(cached: GlobalState, initialState: GlobalState) {
     messageStore.ephemeralById ||= {};
   });
 
+  Object.values(cached.messages.webPageById).forEach((webPage) => {
+    if (webPage.webpageType === 'full' && webPage.cachedPage && !webPage.cachedPageAudioById) {
+      webPage.cachedPageAudioById = buildPageAudioById(webPage.cachedPage);
+    }
+  });
+
   // Pre-fill settings with defaults
   cached.settings.byKey = {
     ...initialState.settings.byKey,
@@ -422,6 +429,14 @@ function unsafeMigrateCache(cached: GlobalState, initialState: GlobalState) {
 
   if (cached.audioPlayer.volume === undefined) {
     cached.audioPlayer.volume = initialState.audioPlayer.volume;
+  }
+
+  if (cached.audioPlayer.repeatMode === undefined) {
+    cached.audioPlayer.repeatMode = initialState.audioPlayer.repeatMode;
+  }
+
+  if (cached.audioPlayer.orderMode === undefined) {
+    cached.audioPlayer.orderMode = initialState.audioPlayer.orderMode;
   }
 }
 

@@ -21,7 +21,6 @@ export default function useProfileViewportIds({
   loadStories,
   loadStoriesArchive,
   loadMoreGifts,
-  loadSavedMusic,
   tabType,
   mediaSearchType,
   groupChatMembers,
@@ -34,7 +33,6 @@ export default function useProfileViewportIds({
   threadId,
   storyIds,
   giftIds,
-  playlistIds,
   pinnedStoryIds,
   archiveStoryIds,
   similarChannels,
@@ -46,7 +44,6 @@ export default function useProfileViewportIds({
   loadStories: AnyToVoidFunction;
   loadStoriesArchive: AnyToVoidFunction;
   loadMoreGifts: AnyToVoidFunction;
-  loadSavedMusic: AnyToVoidFunction;
   tabType: ProfileTabType;
   mediaSearchType?: SharedMediaType;
   groupChatMembers?: ApiChatMember[];
@@ -59,7 +56,6 @@ export default function useProfileViewportIds({
   threadId?: ThreadId;
   storyIds?: number[];
   giftIds?: string[];
-  playlistIds?: string[];
   pinnedStoryIds?: number[];
   archiveStoryIds?: number[];
   similarChannels?: string[];
@@ -122,10 +118,6 @@ export default function useProfileViewportIds({
 
   const [commonChatViewportIds, getMoreCommonChats, noProfileInfoForCommonChats] = useInfiniteScrollForLoadableItems(
     loadCommonChats, chatIds,
-  );
-
-  const [savedMusicViewportIds, getMoreSavedMusic, noProfileInfoForSavedMusic] = useInfiniteScrollForLoadableItems(
-    loadSavedMusic, playlistIds,
   );
 
   const sortedStoryIds = useMemo(() => {
@@ -201,11 +193,6 @@ export default function useProfileViewportIds({
       viewportIds = pollViewportIds;
       getMore = getMorePolls;
       noProfileInfo = noProfileInfoForPolls;
-      break;
-    case 'playlist':
-      viewportIds = savedMusicViewportIds;
-      getMore = getMoreSavedMusic;
-      noProfileInfo = noProfileInfoForSavedMusic;
       break;
     case 'stories':
       viewportIds = storyViewportIds;

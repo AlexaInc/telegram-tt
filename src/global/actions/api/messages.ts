@@ -190,6 +190,7 @@ import {
   selectThreadLocalStateParam,
   selectThreadReadState,
 } from '../../selectors/threads';
+import { selectUserSavedMusic } from '../../selectors/users';
 import {
   deleteEphemeralMessagesWithAnimation, deleteMessages, updateWithLocalMedia,
 } from '../apiUpdaters/messages';
@@ -217,6 +218,7 @@ const TTL_CLEANUP_DELAY_BUFFER = SECOND_IN_MS;
 const uploadProgressCallbacks = new Map<MessageKey, ApiOnProgress>();
 
 const ttlCleanupTimersByChatId = new Map<string, { timer: number; expiresAt: number }>();
+const savedMusicForwardTokens = new Map<number, symbol>();
 
 const runDebouncedForMarkRead = debounce((cb) => cb(), 500, false);
 
@@ -3436,6 +3438,84 @@ addActionHandler('forwardStory', (global, actions, payload): ActionReturnType =>
     entities,
     story,
     lastMessageId,
+  });
+
+  global = getGlobal();
+  global = updateTabState(global, {
+    forwardMessages: {},
+    isShareMessageModalShown: false,
+  }, tabId);
+  setGlobal(global);
+});
+
+addActionHandler('forwardSavedMusic', async (global, actions, payload): Promise<void> => {
+  const {
+    toChatId, toThreadId = MAIN_THREAD_ID, confirmedStars, tabId = getCurrentTabId(),
+  } = payload;
+
+  const { savedMusic } = selectTabState(global, tabId).forwardMessages;
+  const toChat = selectChat(global, toChatId);
+  const audio = savedMusic && selectUserSavedMusic(global, savedMusic.peerId)?.byId[savedMusic.audioId];
+  if (!toChat || !audio) {
+    return;
+  }
+
+  const forwardToken = Symbol('savedMusicForward');
+  savedMusicForwardTokens.set(tabId, forwardToken);
+
+  const messagePriceInStars = await getPeerStarsForMessage(global, toChatId);
+
+  global = getGlobal();
+  if (savedMusicForwardTokens.get(tabId) !== forwardToken) {
+    return;
+  }
+  const currentSavedMusic = selectTabState(global, tabId).forwardMessages.savedMusic;
+  if (currentSavedMusic?.peerId !== savedMusic.peerId || currentSavedMusic.audioId !== savedMusic.audioId) {
+    return;
+  }
+  savedMusicForwardTokens.delete(tabId);
+
+  if (messagePriceInStars) {
+    const shouldAutoApprove = global.settings.byKey.shouldPaidMessageAutoApprove;
+    if (messagePriceInStars !== confirmedStars && !shouldAutoApprove) {
+      global = updateTabState(global, {
+        forwardMessages: {
+          ...selectTabState(global, tabId).forwardMessages,
+          savedMusicPendingSend: { toChatId, toThreadId, stars: messagePriceInStars },
+        },
+      }, tabId);
+      setGlobal(global);
+      return;
+    }
+
+    const starsBalance = global.stars?.balance?.amount || 0;
+    if (messagePriceInStars > starsBalance) {
+      actions.openStarsBalanceModal({ topup: { balanceNeeded: messagePriceInStars }, tabId });
+      return;
+    }
+  }
+
+  const lastMessageId = selectChatLastMessageId(global, toChatId);
+  const topicId = typeof toThreadId === 'number' && toThreadId !== MAIN_THREAD_ID ? toThreadId : undefined;
+  void sendMessage(global, {
+    chat: toChat,
+    audio,
+    lastMessageId,
+    messagePriceInStars,
+    isPending: messagePriceInStars ? true : undefined,
+    replyInfo: topicId ? { type: 'message', replyToMsgId: topicId, replyToTopId: topicId } : undefined,
+  });
+
+  actions.showNotification({
+    message: toChatId === global.currentUserId ? {
+      key: 'FwdMessagesToSaved',
+      options: { withNodes: true, withMarkdown: true, pluralValue: 1 },
+    } : {
+      key: 'FwdMessagesToChats',
+      variables: { count: 1 },
+      options: { pluralValue: 1 },
+    },
+    tabId,
   });
 
   global = getGlobal();

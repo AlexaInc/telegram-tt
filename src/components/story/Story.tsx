@@ -952,7 +952,7 @@ export default memo(withGlobal<OwnProps>((global, {
     mapModal,
     reportModal,
     giftInfoModal,
-    isPaymentMessageConfirmDialogOpen,
+    paymentMessageConfirmDialogKey,
     storyStealthModal,
   } = tabState;
   const { isOpen: isPremiumModalOpen } = premiumModal || {};
@@ -960,7 +960,7 @@ export default memo(withGlobal<OwnProps>((global, {
   const story = selectPeerStory(global, peerId, storyId);
   const isLoadedStory = story && 'content' in story;
   const shouldForcePause = Boolean(
-    isPaymentMessageConfirmDialogOpen
+    paymentMessageConfirmDialogKey
     || viewModal || forwardedStoryId || tabState.reactionPicker?.storyId || reportModal || isPrivacyModalOpen
     || isPremiumModalOpen || isDeleteModalOpen || safeLinkModalUrl || isStealthModalOpen || mapModal || giftInfoModal,
   );

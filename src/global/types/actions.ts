@@ -82,7 +82,6 @@ import type { P2pMessage } from '../../lib/vibecalls';
 import type {
   AccountSettings,
   AttachmentCompression,
-  AudioOrigin,
   CallSound,
   ChatListType,
   ConfettiParams,
@@ -102,10 +101,14 @@ import type {
   MessageListType,
   MiddleSearchParams,
   NewChatMembersProgress,
+  OrderMode,
   PaymentStep,
   PerformanceType,
+  PlaybackItemRef,
+  PlaybackSource,
   Point,
   ProfileTabType,
+  RepeatMode,
   ResaleGiftsFilterOptions,
   ScrollTargetPosition,
   SendMessageParams,
@@ -367,6 +370,7 @@ export interface ActionPayloads {
     direction?: LoadMoreDirection;
     chatId?: string;
     threadId?: ThreadId;
+    mediaType?: SharedMediaType;
     limit?: number;
   } & WithTabId;
   searchMessagesByDate: {
@@ -1936,10 +1940,8 @@ export interface ActionPayloads {
     timestamp: number;
   } & WithTabId;
   openAudioPlayer: {
-    chatId: string;
-    threadId?: ThreadId;
-    messageId: number;
-    origin?: AudioOrigin;
+    item?: PlaybackItemRef;
+    source?: PlaybackSource;
     volume?: number;
     playbackRate?: number;
     isMuted?: boolean;
@@ -1956,11 +1958,25 @@ export interface ActionPayloads {
   setAudioPlayerMuted: {
     isMuted: boolean;
   } & WithTabId;
-  setAudioPlayerOrigin: {
-    origin: AudioOrigin;
+  setAudioPlaybackSource: {
+    source: PlaybackSource;
   } & WithTabId;
+  playNextTrack: {
+    isAuto?: boolean;
+  } & WithTabId;
+  playPreviousTrack: WithTabId | undefined;
+  setAudioPlayerRepeatMode: {
+    repeatMode: RepeatMode;
+  } & WithTabId;
+  setAudioPlayerOrderMode: {
+    orderMode: OrderMode;
+  } & WithTabId;
+  openAudioPlaylistModal: WithTabId | undefined;
+  closeAudioPlaylistModal: WithTabId | undefined;
+  loadShufflePlaylist: WithTabId | undefined;
   loadSavedMusicIds: undefined;
   toggleMusicInProfile: { audio: ApiAudio } & WithTabId;
+  reorderSavedMusic: { audioId: string; afterAudioId?: string } & WithTabId;
 
   // Downloads
   downloadSelectedMessages: WithTabId | undefined;
@@ -2027,9 +2043,12 @@ export interface ActionPayloads {
   loadCommonChats: {
     userId: string;
   };
+  settlePendingPlaylistStep: {
+    shouldContinue?: boolean;
+  } & WithTabId;
   loadSavedMusic: {
     userId: string;
-  };
+  } & WithTabId;
   reportSpam: { chatId: string } & WithTabId;
   loadFullUser: { userId: string; withPhotos?: boolean };
   openAddContactDialog: { userId?: string } & WithTabId;
@@ -2117,6 +2136,7 @@ export interface ActionPayloads {
     fromChatId: string;
     messageIds?: number[];
     storyId?: number;
+    savedMusic?: { peerId: string; audioId: string };
     groupedId?: string;
     withMyScore?: boolean;
   } & WithTabId;
@@ -2152,6 +2172,8 @@ export interface ActionPayloads {
   forwardStory: {
     toChatId: string;
   } & WithTabId;
+  forwardSavedMusic: { toChatId: string; toThreadId?: ThreadId; confirmedStars?: number } & WithTabId;
+  clearSavedMusicPendingSend: WithTabId | undefined;
 
   // GIFs
   loadSavedGifs: undefined;
@@ -3262,7 +3284,7 @@ export interface ActionPayloads {
     status: ApiPaymentStatus;
   } & WithTabId;
 
-  openPaymentMessageConfirmDialogOpen: WithTabId | undefined;
+  openPaymentMessageConfirmDialogOpen: { dialogKey: string } & WithTabId;
   closePaymentMessageConfirmDialogOpen: WithTabId | undefined;
   openPriceConfirmModal: {
     originalAmount: number;

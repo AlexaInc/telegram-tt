@@ -218,7 +218,7 @@ const AnimatedSticker = ({
     if (
       !animation
       || !(playRef.current || playSegmentRef.current)
-      || isFrozen(forceAlways)
+      || isFrozen(forceAlways, forceOnHeavyAnimation)
     ) {
       return;
     }

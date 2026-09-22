@@ -3,8 +3,7 @@ import type {
   ApiAudio,
   ApiDimensions,
   ApiDocument,
-  ApiGame,
-  ApiLocation,
+  ApiGame, ApiLocation,
   ApiMediaExtendedPreview,
   ApiMessage,
   ApiMessageSearchType,
@@ -18,7 +17,7 @@ import type {
   SizeTarget,
   StatefulMediaContent,
 } from '../../api/types';
-import type { ActiveDownloads } from '../../types';
+import type { ActiveDownloads, SharedMediaType } from '../../types';
 import { ApiMediaFormat } from '../../api/types';
 
 import {
@@ -30,6 +29,7 @@ import {
 } from '../../util/browser/windowEnvironment';
 import { getDocumentHasPreview } from '../../components/common/helpers/documentInfo';
 import { getAttachmentMediaType, matchLinkInMessageText } from './messages';
+import { WINDOWED_MEDIA_SEARCH_TYPES } from './middleSearch';
 
 export type MediaWithThumbs = ApiPhoto | ApiVideo | ApiDocument | ApiSticker | ApiMediaExtendedPreview;
 export type DownloadableMedia = ApiPhoto | ApiVideo | ApiDocument | ApiSticker | ApiAudio | ApiVoice | ApiWebDocument;
@@ -610,6 +610,23 @@ export function isMediaLoadableInViewer(newMessage: ApiMessage) {
   if (newMessage.content.photo) return true;
   if (newMessage.content.video && !newMessage.content.video.isRound && !newMessage.content.video.isGif) return true;
   return false;
+}
+
+export function isMessageInMediaWindow(message: ApiMessage, mediaType: SharedMediaType) {
+  switch (mediaType) {
+    case 'media':
+      return isMediaLoadableInViewer(message);
+    case 'audio':
+      return Boolean(message.content?.audio);
+    case 'voice':
+      return Boolean(message.content?.voice || message.content?.video?.isRound);
+    default:
+      return false;
+  }
+}
+
+export function hasWindowedMediaContent(message: ApiMessage) {
+  return WINDOWED_MEDIA_SEARCH_TYPES.some((mediaType) => isMessageInMediaWindow(message, mediaType));
 }
 
 export function getMediaFilename(media: DownloadableMedia) {

@@ -61,6 +61,7 @@ import Button from '../ui/Button';
 import Collage from './Collage';
 import EmbedFrame from './EmbedFrame';
 import EmbedPost from './EmbedPost';
+import InstantViewAudio from './InstantViewAudio';
 import Latex from './Latex';
 import RichButton from './RichButton';
 import RichText, { getPageAnchorId } from './RichText';
@@ -81,6 +82,7 @@ type OwnProps = {
   theme: ThemeKey;
   fontSizeAdjust?: number;
   pageUrl?: string;
+  webPageId?: string;
   chatId?: string;
   messageId?: number;
   threadId?: ThreadId;
@@ -118,6 +120,7 @@ const RichContent = ({
   theme,
   fontSizeAdjust,
   pageUrl,
+  webPageId,
   chatId,
   messageId,
   threadId,
@@ -380,6 +383,14 @@ const RichContent = ({
           />
         );
       case 'audio':
+        if (!webPageId) return renderUnsupportedBlock(unsupportedText, block.type);
+        return (
+          <InstantViewAudio
+            audio={block.audio}
+            webPageId={webPageId}
+            theme={theme}
+          />
+        );
       case 'unsupported':
         return renderUnsupportedBlock(unsupportedText, block.type);
     }

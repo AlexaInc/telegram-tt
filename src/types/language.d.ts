@@ -1287,6 +1287,16 @@ export interface LangPair {
   'AudioPlayerClose': undefined;
   'AudioAddToProfile': undefined;
   'AudioRemoveFromProfile': undefined;
+  'AudioOpenPlaylist': undefined;
+  'AudioRepeatOff': undefined;
+  'AudioRepeatList': undefined;
+  'AudioRepeatSong': undefined;
+  'AudioPlaybackOrder': undefined;
+  'AudioShuffleList': undefined;
+  'AudioReverseOrder': undefined;
+  'AudioShowInChat': undefined;
+  'AudioVolume': undefined;
+  'AudioPlaybackRate': undefined;
   'AudioSaveToMyProfileSaved': undefined;
   'AudioSaveToMyProfileUnsaved': undefined;
   'DeleteForMeDescription': undefined;
@@ -1688,8 +1698,8 @@ export interface LangPair {
   'ProfileTabStories': undefined;
   'ProfileTabStoriesArchive': undefined;
   'ProfileTabGifts': undefined;
-  'ProfileTabPlaylist': undefined;
-  'ProfilePlaylistEmpty': undefined;
+  'Playlist': undefined;
+  'PlaylistYourTitle': undefined;
   'ProfileTabSubscribers': undefined;
   'ProfileTabMembers': undefined;
   'ProfileTabBotPreview': undefined;
@@ -3142,6 +3152,9 @@ export interface LangPairWithVariables<V = LangVariable> {
   };
   'FolderLinkNotificationUpdatedTitle': {
     'title': V;
+  };
+  'PlaylistTitle': {
+    'peer': V;
   };
   'LocationPermissionText': {
     'name': V;

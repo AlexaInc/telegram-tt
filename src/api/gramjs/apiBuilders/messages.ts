@@ -2,6 +2,7 @@ import { Api as GramJs } from '../../../lib/gramjs';
 
 import type {
   ApiAttachment,
+  ApiAudio,
   ApiBaseThreadInfo,
   ApiChat,
   ApiCommentsInfo,
@@ -514,6 +515,7 @@ export function buildLocalMessage({
   attachment,
   sticker,
   gif,
+  audio,
   poll,
   todo,
   contact,
@@ -538,6 +540,7 @@ export function buildLocalMessage({
   attachment?: ApiAttachment;
   sticker?: ApiSticker;
   gif?: ApiVideo;
+  audio?: ApiAudio;
   poll?: ApiNewPoll;
   todo?: ApiNewMediaTodo;
   contact?: ApiContact;
@@ -580,6 +583,7 @@ export function buildLocalMessage({
       ...media,
       sticker,
       video: gif || media?.video,
+      audio: audio || media?.audio,
       contact,
       storyData: story && { mediaType: 'storyData', ...story },
       pollId: localPoll?.summary.id,

@@ -370,7 +370,7 @@ export function sendMessageLocal(
 ) {
   const {
     chat, lastMessageId, text, entities, richMessage, replyInfo, suggestedPostInfo,
-    attachment, sticker, story, gif, poll, todo,
+    attachment, sticker, story, gif, audio, poll, todo,
     contact, scheduledAt, scheduleRepeatPeriod, groupedId, sendAs, wasDrafted, isInvertedMedia, effectId, isPending,
     messagePriceInStars, dice,
   } = params;
@@ -391,6 +391,7 @@ export function sendMessageLocal(
     attachment,
     sticker,
     gif,
+    audio,
     poll,
     todo,
     contact,
@@ -425,7 +426,7 @@ export function sendApiMessage(
 ) {
   const {
     chat, text, entities, richMessage, replyInfo, suggestedPostInfo, suggestedMedia,
-    attachment, sticker, story, gif, poll, todo, contact, dice,
+    attachment, sticker, story, gif, audio, poll, todo, contact, dice,
 
     isSilent, scheduledAt, scheduleRepeatPeriod, groupedId, noWebPage, sendAs, shouldUpdateStickerSetOrder,
     isInvertedMedia, effectId, webPageMediaSize, webPageUrl, messagePriceInStars,
@@ -528,6 +529,8 @@ export function sendApiMessage(
       media = buildInputMediaDocument(sticker);
     } else if (gif) {
       media = buildInputMediaDocument(gif);
+    } else if (audio) {
+      media = buildInputMediaDocument(audio);
     } else if (poll) {
       try {
         const attachedMedia = poll.attachedMedia
@@ -1126,6 +1129,7 @@ function canSendRichMessage(params: SendMessageParams) {
     && !params.sticker
     && !params.story
     && !params.gif
+    && !params.audio
     && !params.poll
     && !params.todo
     && !params.contact

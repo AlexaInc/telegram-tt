@@ -441,6 +441,7 @@ export interface ApiWebPageFull {
   auction?: ApiWebPageAuctionData;
   stickers?: ApiWebPageStickerData;
   cachedPage?: ApiInstantViewPage;
+  cachedPageAudioById?: Record<string, ApiAudio>;
   aiComposeToneEmojiId?: string;
   hasLargeMedia?: boolean;
 }

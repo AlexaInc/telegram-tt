@@ -72,7 +72,7 @@ addActionHandler('init', (global, actions, payload): ActionReturnType => {
           threadsGlobal = replaceThreadLocalStateParam(threadsGlobal, chatId, threadId, 'lastViewportIds', undefined);
           return;
         }
-        threadsGlobal = initializeChatMediaSearchResults(threadsGlobal, chatId, threadId, tabId);
+        threadsGlobal = initializeChatMediaSearchResults(threadsGlobal, chatId, threadId, 'media', tabId);
         threadsGlobal = replaceTabThreadParam(
           threadsGlobal,
           chatId,
