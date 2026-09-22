@@ -11,6 +11,7 @@ import type {
 } from '../../types';
 import type { TrackKey } from '../../util/audioPlayback/mediaPool';
 import type { LangFn } from '../../util/localization';
+import type { Signal } from '../../util/signals';
 import type { MenuItemContextAction } from '../ui/ListItem';
 
 import { getMediaTransferState } from '../../global/helpers';
@@ -36,6 +37,7 @@ import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
 import useOldLang from '../../hooks/useOldLang';
 import useShowTransitionDeprecated from '../../hooks/useShowTransitionDeprecated';
+import useDevicePixelRatio from '../../hooks/window/useDevicePixelRatio';
 
 import Button from '../ui/Button';
 import Link from '../ui/Link';
@@ -149,6 +151,8 @@ const TrackRow = ({
   const containerRef = useRef<HTMLDivElement>();
   const menuRef = useRef<HTMLDivElement>();
   const isSeekingRef = useRef<boolean>(false);
+  const wasPlayingBeforeSeekRef = useRef<boolean>(false);
+  const pendingSeekTimeRef = useRef<number>(0);
   const seekerRef = useRef<HTMLDivElement>();
   const oldLang = useOldLang();
   const lang = useLang();
@@ -162,8 +166,13 @@ const TrackRow = ({
     setIsActivated(false);
   });
 
+  const isReverse = isInOneTimeModal && !capabilities.canSeek;
+  const withWaveform = variant === 'inline' || isInOneTimeModal || isTranscribed;
+  const isWaveformFilled = isMediaUnread && !isOwn && !isReverse;
+
   const {
-    isPlaying, isCurrent, playProgress, playPause, setCurrentTime, duration, audioElement,
+    isPlaying, isCurrent, playProgress, getFrameProgress, duration, audioElement,
+    play, pause, playPause, setCurrentTime, previewProgress,
   } = useAudioPlayback({
     trackKey,
     mediaType,
@@ -172,6 +181,7 @@ const TrackRow = ({
     originalDuration,
     shouldPlay: Boolean(isActivated || autoPlay),
     noProgressUpdates,
+    withFrameProgress: Boolean(withWaveform && mediaSource && !isWaveformFilled),
     onTrackChange: handleTrackChange,
     onPause,
   });
@@ -179,14 +189,13 @@ const TrackRow = ({
   const { isBuffered, bufferedRanges } = useBuffering(false, undefined, undefined, audioElement);
 
   const reversePlayProgress = 1 - playProgress;
-  const isReverse = isInOneTimeModal && !capabilities.canSeek;
-  const withWaveform = variant === 'inline' || isInOneTimeModal || isTranscribed;
 
   const generatedWaveform = useGeneratedVoiceWaveform(mediaSource, withWaveform, onWaveformGenerated);
   const waveformCanvasRef = useWaveformCanvas(
     theme,
     mediaSource,
-    (isMediaUnread && !isOwn && !isReverse) ? 1 : playProgress,
+    getFrameProgress,
+    isWaveformFilled,
     isOwn,
     !noAvatars,
     isMobile,
@@ -265,28 +274,54 @@ const TrackRow = ({
       const clientX = e instanceof MouseEvent ? e.clientX : e.targetTouches[0].clientX;
       e.stopPropagation(); // Prevent Slide-to-Reply activation
       // Prevent track skipping while seeking near end
-      setCurrentTime(Math.max(Math.min(duration * ((clientX - left) / width), duration - 0.1), 0.001));
+      const time = Math.max(Math.min(duration * ((clientX - left) / width), duration - 0.1), 0.001);
+      pendingSeekTimeRef.current = time;
+      previewProgress(time / duration);
     }
   });
 
   const handleStartSeek = useLastCallback((e: MouseEvent | TouchEvent) => {
-    if (e instanceof MouseEvent && e.button === 2) return;
+    if (!duration || (e instanceof MouseEvent && e.button !== 0)) return;
     isSeekingRef.current = true;
+
+    if (audioElement && !audioElement.paused) {
+      wasPlayingBeforeSeekRef.current = true;
+      pause();
+    }
+
     handleSeek(e);
   });
 
   const handleStopSeek = useLastCallback(() => {
+    if (!isSeekingRef.current) return;
     isSeekingRef.current = false;
+
+    setCurrentTime(pendingSeekTimeRef.current);
+
+    if (wasPlayingBeforeSeekRef.current) {
+      wasPlayingBeforeSeekRef.current = false;
+      play();
+    }
   });
 
   useEffect(() => {
-    if (!seekerRef.current || !withSeekline || isInOneTimeModal) return undefined;
-    return captureEvents(seekerRef.current, {
+    const seeker = seekerRef.current;
+    if (!seeker || !withSeekline || isInOneTimeModal) return undefined;
+
+    const releaseEvents = captureEvents(seeker, {
       onCapture: handleStartSeek,
       onRelease: handleStopSeek,
       onClick: handleStopSeek,
       onDrag: handleSeek,
     });
+    seeker.addEventListener('touchend', handleStopSeek, { passive: true });
+    seeker.addEventListener('touchcancel', handleStopSeek, { passive: true });
+
+    return () => {
+      releaseEvents();
+      seeker.removeEventListener('touchend', handleStopSeek);
+      seeker.removeEventListener('touchcancel', handleStopSeek);
+    };
   }, [withSeekline, handleStartSeek, handleSeek, handleStopSeek, isInOneTimeModal]);
 
   function renderFirstLine() {
@@ -669,8 +704,9 @@ function renderVoice(
 
 function useWaveformCanvas(
   theme: ThemeKey,
-  media?: ApiVoice | ApiVideo,
-  playProgress = 0,
+  media: ApiVoice | ApiVideo | undefined,
+  getProgress: Signal<number>,
+  isFilled = false,
   isOwn = false,
   withAvatar = false,
   isMobile = false,
@@ -678,6 +714,7 @@ function useWaveformCanvas(
   generatedWaveform?: number[],
 ) {
   const canvasRef = useRef<HTMLCanvasElement>();
+  const dpr = useDevicePixelRatio();
 
   const { data: spikes, peak } = useMemo(() => {
     if (!media) {
@@ -718,12 +755,15 @@ function useWaveformCanvas(
     const fillStyle = isOwn ? fillOwnColor : fillColor;
     const progressFillStyle = isOwn ? progressFillOwnColor : progressFillColor;
 
-    renderWaveform(canvas, spikes, isReverse ? 1 - playProgress : playProgress, {
+    const progress = isFilled ? 1 : getProgress();
+
+    renderWaveform(canvas, spikes, isReverse ? 1 - progress : progress, {
       peak,
       fillStyle,
       progressFillStyle,
+      dpr,
     });
-  }, [isOwn, peak, playProgress, spikes, theme, isReverse]);
+  }, [isOwn, peak, getProgress, isFilled, spikes, theme, isReverse, dpr]);
 
   return canvasRef;
 }

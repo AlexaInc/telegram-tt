@@ -3,9 +3,12 @@ import { memo, useEffect, useRef } from '../../../lib/teact/teact';
 import type { Signal } from '../../../util/signals';
 
 import { requestMutation } from '../../../lib/fasterdom/fasterdom';
-import { isCurrentElementPlaying, pause, resume } from '../../../util/audioPlayback/playbackController';
+import {
+  getOwnerCurrentTime, isCurrentElementPlaying, pause, previewProgress, resume,
+} from '../../../util/audioPlayback/playbackController';
 import buildClassName from '../../../util/buildClassName';
 import { captureEvents } from '../../../util/captureEvents';
+import { clamp } from '../../../util/math';
 
 import useLastCallback from '../../../hooks/useLastCallback';
 
@@ -47,14 +50,8 @@ const PlayerSeekLine = ({
   });
 
   useEffect(() => {
-    const applyFromSignal = () => {
-      if (isSeekingRef.current) return;
-      applyFillProgress(Math.min(Math.max(getProgress(), 0), 1));
-    };
-
-    applyFromSignal();
-
-    return getProgress.subscribe(applyFromSignal);
+    if (isSeekingRef.current) return;
+    applyFillProgress(clamp(getProgress(), 0, 1));
   }, [getProgress, applyFillProgress]);
 
   const progressFromClientX = useLastCallback((clientX: number) => {
@@ -62,7 +59,7 @@ const PlayerSeekLine = ({
     if (!container) return 0;
 
     const { left, width } = container.getBoundingClientRect();
-    return Math.min(Math.max((clientX - left) / width, 0), 1);
+    return clamp((clientX - left) / width, 0, 1);
   });
 
   const toggleSeekingClass = useLastCallback((isSeeking: boolean) => {
@@ -92,6 +89,7 @@ const PlayerSeekLine = ({
     }
     pendingProgressRef.current = progressFromClientX(getClientX(e));
     applyFillProgress(pendingProgressRef.current);
+    previewProgress(pendingProgressRef.current);
   });
 
   const handleCancelSeek = useLastCallback(() => {
@@ -99,7 +97,8 @@ const PlayerSeekLine = ({
 
     isSeekingRef.current = false;
     toggleSeekingClass(false);
-    applyFillProgress(Math.min(Math.max(getProgress(), 0), 1));
+    if (duration) previewProgress(getOwnerCurrentTime() / duration);
+    applyFillProgress(clamp(getProgress(), 0, 1));
     if (wasPlayingRef.current) {
       wasPlayingRef.current = false;
       resume();

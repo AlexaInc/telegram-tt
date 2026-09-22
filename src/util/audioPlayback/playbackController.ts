@@ -6,6 +6,7 @@ import type { TrackKey } from './mediaPool';
 import { PLAYBACK_RATE_FOR_AUDIO_MIN_DURATION } from '../../config';
 import { selectCanGoNext, selectCanGoPrev, selectCurrentTrackKey } from '../../global/selectors/audioPlayer';
 import { selectTabState } from '../../global/selectors/tabs';
+import { animate } from '../animation';
 import { IS_SAFARI } from '../browser/windowEnvironment';
 import { createCallbackManager } from '../callbacks';
 import {
@@ -13,12 +14,15 @@ import {
 } from '../mediaSession';
 import { isSafariPatchInProgress, patchSafariProgressiveAudio } from '../patchSafariProgressiveAudio';
 import safePlay from '../safePlay';
+import { fastRaf } from '../schedulers';
 import { createSignal } from '../signals';
 import {
   acquire, peek, pin, reassignKey, release,
 } from './mediaPool';
 
 const SEEK_OFFSET = 10;
+const FRAME_PROGRESS_STEPS = 4096;
+const FRAME_PROGRESS_MAX_DURATION = FRAME_PROGRESS_STEPS / 4;
 const PROGRESSIVE_URL_MARK = '/progressive/';
 const DEFAULT_CAPABILITIES: PlaybackCapabilities = { canSeek: true, mediaSession: 'own', withAutoAdvance: false };
 
@@ -43,9 +47,14 @@ let mediaSessionOwner: {
   metadata?: MediaMetadata;
 } | undefined;
 const elementKeys = new WeakMap<HTMLAudioElement, TrackKey>();
+let isProgressLoopActive = false;
 
 export function getProgressSignal() {
   return getProgress;
+}
+
+export function previewProgress(progress: number) {
+  setProgress(progress);
 }
 
 export function getState() {
@@ -420,6 +429,7 @@ function bindElement(element: HTMLAudioElement) {
   element.addEventListener('play', () => {
     if (!isCurrent(element)) return;
     updateState({ isPlaying: true, duration: getDuration(element) });
+    startProgressLoop();
     if (!ownsMediaSession(element)) return;
     registerMediaSession(currentMetadata, buildMediaSessionHandlers());
     setPlaybackState('playing');
@@ -455,11 +465,11 @@ function bindElement(element: HTMLAudioElement) {
   });
 
   element.addEventListener('timeupdate', () => {
-    if (!isCurrent(element) || isSafariPatchInProgress(element)) return;
-    if (element.paused) return;
-    if (currentCapabilities.mediaSession === 'keep') return;
-    const duration = getDuration(element);
-    if (duration) setProgress(element.currentTime / duration);
+    syncPlayingProgress(element);
+  });
+
+  element.addEventListener('durationchange', () => {
+    if (isCurrent(element)) startProgressLoop();
   });
 
   element.addEventListener('loadedmetadata', () => {
@@ -476,6 +486,33 @@ function bindElement(element: HTMLAudioElement) {
     if (selectCurrentTrackKey(getGlobal()) !== elementKeys.get(element)) return;
     getActions().playNextTrack({ isAuto: true });
   });
+}
+
+function startProgressLoop() {
+  if (isProgressLoopActive) return;
+  isProgressLoopActive = true;
+
+  animate(() => {
+    const element = getCurrentElement();
+    const duration = element ? getDuration(element) : 0;
+    isProgressLoopActive = Boolean(element && !element.paused && !element.ended && !element.error)
+      && currentCapabilities.mediaSession !== 'keep' && duration > 0 && duration <= FRAME_PROGRESS_MAX_DURATION;
+    if (!isProgressLoopActive) return false;
+
+    syncPlayingProgress(element!, true);
+    return true;
+  }, fastRaf);
+}
+
+function syncPlayingProgress(element: HTMLAudioElement, isFrame?: boolean) {
+  if (!isCurrent(element) || isSafariPatchInProgress(element)) return;
+  if (element.paused) return;
+  if (currentCapabilities.mediaSession === 'keep') return;
+  const duration = getDuration(element);
+  if (!duration) return;
+
+  const progress = element.currentTime / duration;
+  if (!isFrame || Math.abs(progress - getProgress()) * FRAME_PROGRESS_STEPS >= 1) setProgress(progress);
 }
 
 function resumeMediaSessionOwner() {

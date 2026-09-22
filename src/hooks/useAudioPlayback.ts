@@ -1,4 +1,4 @@
-import { useEffect, useState } from '../lib/teact/teact';
+import { useEffect, useSignal, useState } from '../lib/teact/teact';
 
 import type { PlaybackCapabilities, PlaybackMediaType } from '../types';
 import type { TrackKey } from '../util/audioPlayback/mediaPool';
@@ -20,11 +20,14 @@ type OwnArgs = {
   metadata?: MediaMetadata;
   shouldPlay?: boolean;
   noProgressUpdates?: boolean;
+  withFrameProgress?: boolean;
   onTrackChange?: NoneToVoidFunction;
   onPause?: NoneToVoidFunction;
 };
 
-const EVENTS = ['play', 'pause', 'timeupdate', 'seeking', 'seeked', 'loadedmetadata', 'ended'] as const;
+const EVENTS = [
+  'play', 'pause', 'timeupdate', 'seeking', 'seeked', 'loadedmetadata', 'durationchange', 'ended', 'error',
+] as const;
 
 export default function useAudioPlayback({
   trackKey,
@@ -35,6 +38,7 @@ export default function useAudioPlayback({
   metadata,
   shouldPlay,
   noProgressUpdates,
+  withFrameProgress,
   onTrackChange,
   onPause,
 }: OwnArgs) {
@@ -45,10 +49,16 @@ export default function useAudioPlayback({
     trackKey ? peek(trackKey) : undefined
   ));
   const [playProgress, setPlayProgress] = useState(0);
+  const [getFrameProgress, setFrameProgress] = useSignal(0);
   const [elementDuration, setElementDuration] = useState(0);
   const [isCurrent, setIsCurrent] = useState(() => (
     Boolean(trackKey) && playbackController.getState().trackKey === trackKey
   ));
+
+  const updatePlayProgress = useLastCallback((progress: number) => {
+    setPlayProgress(progress);
+    setFrameProgress(progress);
+  });
 
   useEffect(() => {
     if (!trackKey) return undefined;
@@ -59,7 +69,7 @@ export default function useAudioPlayback({
       setIsCurrent(isNowCurrent);
       if (!isNowCurrent) {
         setIsPlaying(false);
-        setPlayProgress(0);
+        updatePlayProgress(0);
       }
     });
   }, [trackKey]);
@@ -68,7 +78,7 @@ export default function useAudioPlayback({
 
   const handleElementEvent = useLastCallback((e: Event) => {
     const element = e.currentTarget as HTMLAudioElement;
-    if (isSafariPatchInProgress(element)) return;
+    if (isSafariPatchInProgress(element) && e.type !== 'error') return;
 
     switch (e.type) {
       case 'play':
@@ -79,16 +89,19 @@ export default function useAudioPlayback({
         onPause?.();
         break;
       case 'loadedmetadata':
+      case 'durationchange':
         setElementDuration(Number.isFinite(element.duration) ? element.duration : 0);
         break;
       case 'ended':
+      case 'error':
         setIsPlaying(false);
         break;
       case 'timeupdate':
       default: {
         if (noProgressUpdates) break;
-        const currentDuration = Number.isFinite(element.duration) ? element.duration : originalDuration;
-        if (currentDuration) setPlayProgress(element.currentTime / currentDuration);
+        // `pause()` fires `timeupdate` too, which would override a progress preview with the actual position
+        if (e.type === 'timeupdate' && element.paused) break;
+        updatePlayProgress(getElementProgress(element, originalDuration));
         break;
       }
     }
@@ -129,9 +142,30 @@ export default function useAudioPlayback({
     };
   }, [trackKey, handleElementEvent]);
 
+  const isProgressShared = isCurrent && capabilities.mediaSession !== 'keep';
+
+  useEffect(() => {
+    if (!withFrameProgress || noProgressUpdates || !isProgressShared) return undefined;
+
+    const getSharedProgress = playbackController.getProgressSignal();
+
+    return getSharedProgress.subscribe(() => {
+      if (playbackController.getState().trackKey !== trackKey) return;
+
+      if (audioElement?.paused) {
+        updatePlayProgress(getSharedProgress());
+      } else {
+        setFrameProgress(getSharedProgress());
+      }
+    });
+  }, [
+    withFrameProgress, noProgressUpdates, isProgressShared, trackKey, audioElement,
+    updatePlayProgress, setFrameProgress,
+  ]);
+
   useEffectWithPrevDeps(([prevTrackKey]) => {
     if (prevTrackKey && prevTrackKey !== trackKey) {
-      setPlayProgress(0);
+      updatePlayProgress(0);
       onTrackChange?.();
     }
   }, [trackKey, onTrackChange]);
@@ -175,7 +209,12 @@ export default function useAudioPlayback({
       element.currentTime = time;
     }
 
-    if (duration) setPlayProgress(element.currentTime / duration);
+    updatePlayProgress(getElementProgress(element, originalDuration));
+  });
+
+  const previewProgress = useLastCallback((progress: number) => {
+    updatePlayProgress(progress);
+    if (isProgressShared) playbackController.previewProgress(progress);
   });
 
   useEffectWithPrevDeps(([prevShouldPlay, prevSrc, prevTrackKey]) => {
@@ -198,12 +237,22 @@ export default function useAudioPlayback({
     isPlaying,
     isCurrent,
     playProgress,
+    getFrameProgress,
     duration,
     audioElement,
+    play,
+    pause,
     playPause,
     setCurrentTime,
+    previewProgress,
     setVolume: playbackController.setVolume,
     toggleMuted: playbackController.toggleMuted,
     setPlaybackRate: playbackController.setPlaybackRate,
   };
+}
+
+function getElementProgress(element: HTMLAudioElement, fallbackDuration: number) {
+  const duration = Number.isFinite(element.duration) ? element.duration : fallbackDuration;
+
+  return duration ? element.currentTime / duration : 0;
 }
