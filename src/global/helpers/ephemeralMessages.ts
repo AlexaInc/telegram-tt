@@ -7,7 +7,7 @@ import { selectChatFullInfo, selectUser, selectUserFullInfo } from '../selectors
 import { isChatGroup } from './chats';
 import { getMainUsername } from './users';
 
-const UNSUPPORTED_EPHEMERAL_BUTTON_TYPES = new Set<ApiKeyboardButton['type']>([
+const UNSUPPORTED_EPHEMERAL_BUTTON_TYPES = new Set<ApiKeyboardButton['action']['type']>([
   'buy',
   'game',
   'requestPhone',
@@ -25,7 +25,7 @@ export function getCanReplyToEphemeralMessage(message: ApiMessage) {
 }
 
 export function isKeyboardButtonUnsupportedForEphemeral(button: ApiKeyboardButton) {
-  return UNSUPPORTED_EPHEMERAL_BUTTON_TYPES.has(button.type);
+  return UNSUPPORTED_EPHEMERAL_BUTTON_TYPES.has(button.action.type);
 }
 
 export function isEphemeralSendSupported({

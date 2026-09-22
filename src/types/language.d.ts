@@ -2378,6 +2378,34 @@ export interface LangPair {
   'SettingsPerformanceDesc': undefined;
   'SettingsStickersDesc': undefined;
   'SettingsSessionsDesc': undefined;
+  'RichButtons': undefined;
+  'RichButtonInline': undefined;
+  'RichButtonRow': undefined;
+  'RichButtonEdit': undefined;
+  'RichButtonAdd': undefined;
+  'RichButtonRemove': undefined;
+  'RichButtonEarlier': undefined;
+  'RichButtonLater': undefined;
+  'RichButtonAction': undefined;
+  'RichButtonUrl': undefined;
+  'RichButtonProfile': undefined;
+  'RichButtonCopy': undefined;
+  'RichButtonDisabled': undefined;
+  'RichButtonUserId': undefined;
+  'RichButtonSelectUser': undefined;
+  'RichButtonUnknownUser': undefined;
+  'RichButtonInvalidUrl': undefined;
+  'RichButtonStyle': undefined;
+  'RichButtonDefault': undefined;
+  'RichButtonPrimary': undefined;
+  'RichButtonDanger': undefined;
+  'RichButtonSuccess': undefined;
+  'RichButtonAlign': undefined;
+  'RichButtonStretch': undefined;
+  'RichButtonLeft': undefined;
+  'RichButtonCenter': undefined;
+  'RichButtonRight': undefined;
+  'RichEditorButtonCopyText': undefined;
 }
 
 export interface LangPairWithVariables<V = LangVariable> {

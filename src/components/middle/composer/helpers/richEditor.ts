@@ -123,6 +123,11 @@ type CreateRichEditorParams = {
   tooltips?: RichEditorTooltipsConfig;
 };
 
+import { ButtonRowExtension, RichButtonExtension } from '../../../../util/tiptap/extensions/richButton';
+
+import RichEditorButton from '../RichEditorButton';
+import RichEditorButtonRow from '../RichEditorButtonRow';
+
 const CODE_BLOCK_TAB_SIZE = 2;
 const TOP_LEVEL_PARAGRAPH_DEPTH = 1;
 const BULLET_LIST_CHECKLIST_ATTR = 'checklist';
@@ -204,6 +209,16 @@ function buildRichEditorExtensions(
 
 function buildRichComposerSchemaExtensions() {
   return [
+    RichButtonExtension.extend({
+      addNodeView() {
+        return TeactNodeViewRenderer(RichEditorButton, { as: 'span', className: styles.richButtonNode });
+      },
+    }),
+    ButtonRowExtension.extend({
+      addNodeView() {
+        return TeactNodeViewRenderer(RichEditorButtonRow);
+      },
+    }),
     DetailsExtension.configure({
       persist: true,
       openClassName: styles.detailsOpen,
@@ -631,7 +646,10 @@ type RichEditorAncestor = {
   position: number;
 };
 
-function findCurrentRichEditorAncestor($from: ResolvedPos, type: 'list' | 'listItem'): RichEditorAncestor | undefined {
+function findCurrentRichEditorAncestor(
+  $from: ResolvedPos,
+  type: 'list' | 'listItem',
+): RichEditorAncestor | undefined {
   for (let depth = $from.depth; depth > 0; depth--) {
     const node = $from.node(depth);
     const isMatch = type === 'listItem'

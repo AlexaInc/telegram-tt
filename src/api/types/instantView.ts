@@ -2,6 +2,8 @@ import type {
   ApiAudio,
   ApiDocument,
   ApiGeoPoint,
+  ApiInlineButtonAction,
+  ApiKeyboardButtonStyle,
   ApiPhoto,
   ApiSticker,
   ApiVideo,
@@ -17,6 +19,23 @@ export type ApiRichTextDate = {
   shortDate?: true;
   longDate?: true;
   dayOfWeek?: true;
+};
+
+export type ApiRichButtonStyle = {
+  type?: ApiKeyboardButtonStyle['type'];
+  isLink?: boolean;
+};
+
+export type ApiRichButton = {
+  text: ApiRichText;
+  action: ApiInlineButtonAction;
+  style?: ApiRichButtonStyle;
+};
+
+export type ApiPageBlockButtonRow = {
+  type: 'buttonRow';
+  buttons: ApiRichButton[];
+  align?: 'left' | 'center' | 'right';
 };
 
 export type ApiRichText =
@@ -48,7 +67,8 @@ export type ApiRichText =
   | { type: 'autoPhone'; text: ApiRichText }
   | { type: 'bankCard'; text: ApiRichText }
   | { type: 'mentionName'; text: ApiRichText; userId: string }
-  | ApiRichTextDate;
+  | ApiRichTextDate
+  | ({ type: 'button' } & ApiRichButton);
 
 export interface ApiPageCaption {
   text: ApiRichText;
@@ -259,7 +279,8 @@ export type ApiPageBlock =
   | { type: 'heading5'; text: ApiRichText }
   | { type: 'heading6'; text: ApiRichText }
   | { type: 'thinking'; text: ApiRichText }
-  | { type: 'math'; source: string };
+  | { type: 'math'; source: string }
+  | ApiPageBlockButtonRow;
 
 export interface ApiInstantViewPage {
   url: string;

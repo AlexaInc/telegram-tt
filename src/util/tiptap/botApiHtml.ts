@@ -15,6 +15,13 @@ import { ApiMessageEntityTypes } from '../../api/types';
 import { TME_LINK_PREFIX } from '../../config';
 import { getFormattedDateFormatString } from '../dates/formattedDate';
 import {
+  buildButtonAttrs,
+  buildButtonHtmlAttrs,
+  BUTTON_ROW_NODE_NAME,
+  normalizeButtonHtml,
+  RICH_BUTTON_NODE_NAME,
+} from './extensions/richButton';
+import {
   BLOCKQUOTE_COLLAPSED_ATTR,
   CAPTION_NODE_NAME,
   FOOTER_NODE_NAME,
@@ -35,6 +42,8 @@ export function buildBotApiHtmlSerializer(schema: Schema) {
   const nodes = { ...DOMSerializer.nodesFromSchema(schema) };
   const marks = { ...DOMSerializer.marksFromSchema(schema) };
 
+  nodes[RICH_BUTTON_NODE_NAME] = (node) => ['tg-button', buildButtonHtmlAttrs(node.attrs), 0];
+  nodes[BUTTON_ROW_NODE_NAME] = (node) => ['tg-button-row', node.attrs.align ? { align: node.attrs.align } : {}, 0];
   nodes.paragraph = () => ['p', 0];
   nodes.heading = (node) => [`h${node.attrs.level}`, 0];
   nodes.horizontalRule = () => ['hr'];
@@ -129,6 +138,8 @@ function extendBotApiMarkdownHtmlExtension(
             : renderMarkdown?.(node, helpers, context) || '';
         },
       });
+    case RICH_BUTTON_NODE_NAME:
+    case BUTTON_ROW_NODE_NAME:
     case 'pullquote':
     case 'details':
     case FOOTER_NODE_NAME:
@@ -269,6 +280,22 @@ function normalizeHtml(html: string, isRenderedRichContent: boolean) {
 }
 
 function normalizeRenderedRichContent(root: DocumentFragment) {
+  root.querySelectorAll<HTMLElement>('[data-rich-button]').forEach((element) => {
+    try {
+      const { action, style } = JSON.parse(element.dataset.richButton!);
+      const replacement = replaceElement(element, 'tg-button');
+      Object.entries(buildButtonHtmlAttrs(buildButtonAttrs(action, style))).forEach(([name, value]) => {
+        replacement.setAttribute(name, value);
+      });
+    } catch {
+      element.remove();
+    }
+  });
+  root.querySelectorAll<HTMLElement>('[data-rich-button-row]').forEach((element) => {
+    const align = element.dataset.richButtonRow;
+    const replacement = replaceElement(element, 'tg-button-row');
+    if (align) replacement.setAttribute('align', align);
+  });
   root.querySelectorAll<HTMLElement>('[data-document-id]').forEach(normalizeCustomEmoji);
   root.querySelectorAll<HTMLPreElement>(`pre[data-entity-type="${ApiMessageEntityTypes.Pre}"]`)
     .forEach(normalizeRenderedCodeBlock);
@@ -305,6 +332,7 @@ function normalizeRenderedCodeBlock(element: HTMLPreElement) {
 }
 
 function normalizeBotApiHtmlForTiptap(root: DocumentFragment) {
+  normalizeButtonHtml(root);
   root.querySelectorAll<HTMLTableElement>('table').forEach(normalizeBotApiTable);
   root.querySelectorAll<HTMLDetailsElement>('details').forEach(normalizeBotApiDetails);
   root.querySelectorAll<HTMLLIElement>('li').forEach((element) => {

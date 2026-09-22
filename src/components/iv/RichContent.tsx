@@ -62,6 +62,7 @@ import Collage from './Collage';
 import EmbedFrame from './EmbedFrame';
 import EmbedPost from './EmbedPost';
 import Latex from './Latex';
+import RichButton from './RichButton';
 import RichText, { getPageAnchorId } from './RichText';
 import Slideshow from './Slideshow';
 import Checkbox from '@gili/primitives/Checkbox';
@@ -219,6 +220,22 @@ const RichContent = ({
 
   function renderBlock(block: ApiPageBlock, sourceKey: string, shouldBreakoutMedia = false): TeactNode {
     switch (block.type) {
+      case 'buttonRow':
+        return (
+          <div
+            className={buildClassName(
+              styles.buttonRow,
+              block.align === 'left' && styles.buttonsLeft,
+              block.align === 'center' && styles.buttonsCenter,
+              block.align === 'right' && styles.buttonsRight,
+            )}
+            data-rich-button-row={block.align || ''}
+          >
+            {block.buttons.map((button) => (
+              <RichButton button={button} {...richTextContext} />
+            ))}
+          </div>
+        );
       case 'title':
         return renderTextBlock(block.text, styles.title, renderContext, block.type);
       case 'subtitle':

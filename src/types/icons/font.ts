@@ -59,6 +59,7 @@ export type FontIconName =
   | 'brush'
   | 'bug'
   | 'bullet-list'
+  | 'button'
   | 'calendar'
   | 'camera'
   | 'camera-add'

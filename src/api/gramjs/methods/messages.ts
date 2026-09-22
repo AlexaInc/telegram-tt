@@ -68,11 +68,16 @@ import {
   buildThreadReadState,
 } from '../apiBuilders/chats';
 import {
-  buildApiAiComposeTone, buildApiAiComposeToneExample, buildApiComposedMessageWithAI, buildApiFormattedText,
+  buildApiAiComposeTone,
+  buildApiAiComposeToneExample,
+  buildApiComposedMessageWithAI,
+  buildApiFormattedText,
 } from '../apiBuilders/common';
 import { buildApiTopicWithState } from '../apiBuilders/forums';
 import {
-  buildMessageMediaContent, buildMessagePollFromMedia, buildMessageTextContent,
+  buildMessageMediaContent,
+  buildMessagePollFromMedia,
+  buildMessageTextContent,
   buildWebPage,
   buildWebPageFromMedia,
   buildWebPagesFromMedia,
@@ -725,13 +730,18 @@ export async function sendEphemeralMessage({
       return undefined;
     }
 
+    const inputRichMessage = richMessage && buildInputRichMessage(richMessage);
+    if (richMessage && !inputRichMessage) {
+      markEphemeralMessageAsFailed(localMessage);
+      return undefined;
+    }
     const result = await invokeRequest(new GramJs.ephemeral.SendMessage({
       peer: buildInputPeer(chat.id, chat.accessHash),
       receiverId: buildInputUser(receiver.id, receiver.accessHash),
       message: richMessage ? DEFAULT_PRIMITIVES.STRING : text || DEFAULT_PRIMITIVES.STRING,
       entities: richMessage ? undefined : entities?.map(buildMtpMessageEntity),
       media,
-      richMessage: richMessage ? buildInputRichMessage(richMessage) : undefined,
+      richMessage: inputRichMessage,
       randomId,
       replyTo: requestReplyInfo && buildInputReplyTo(requestReplyInfo),
     }), {

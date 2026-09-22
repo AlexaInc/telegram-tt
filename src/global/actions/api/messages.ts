@@ -2128,7 +2128,11 @@ async function executeForwardMessages(global: GlobalState, sendParams: SendMessa
   return localMessages;
 }
 
-function cleanupExpiredMessagesForChat(actions: RequiredGlobalActions, chatId: string, messageIds?: number[]) {
+function cleanupExpiredMessagesForChat(
+  actions: RequiredGlobalActions,
+  chatId: string,
+  messageIds?: number[],
+) {
   const global = getGlobal();
   const byId = selectChatMessages(global, chatId);
   if (!byId) return;
@@ -2176,7 +2180,12 @@ function cleanupExpiredMessagesForChat(actions: RequiredGlobalActions, chatId: s
   scheduleTtlCleanup(actions, chatId, closestExpiresAt, serverTime);
 }
 
-function scheduleTtlCleanup(actions: RequiredGlobalActions, chatId: string, expiresAt: number, serverTime: number) {
+function scheduleTtlCleanup(
+  actions: RequiredGlobalActions,
+  chatId: string,
+  expiresAt: number,
+  serverTime: number,
+) {
   const current = ttlCleanupTimersByChatId.get(chatId);
   if (current) {
     clearTimeout(current.timer);

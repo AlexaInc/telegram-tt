@@ -17,7 +17,6 @@ import type {
   ApiInlineResultType,
   ApiJoinChatBotResult,
   ApiKeyboardButton,
-  ApiKeyboardButtonBase,
   ApiKeyboardButtonStyle,
   ApiMessagesBotApp,
   ApiReplyKeyboard,
@@ -26,10 +25,10 @@ import type {
 } from '../../types';
 
 import { int2hex } from '../../../util/colors';
-import { omitUndefined, pick } from '../../../util/iteratees';
+import { pick } from '../../../util/iteratees';
 import { toJSNumber } from '../../../util/numbers';
 import { addDocumentToLocalDb } from '../helpers/localDb';
-import { serializeBytes } from '../helpers/misc';
+import { buildApiInlineButtonAction, buildApiReplyButtonAction } from './buttons';
 import { buildApiMessageEntity, buildApiPhoto } from './common';
 import {
   buildApiDocument,
@@ -45,172 +44,33 @@ import { buildStickerFromDocument } from './symbols';
 
 export function buildReplyButtons(
   replyMarkup: GramJs.TypeReplyMarkup | undefined,
-  receiptMessageId?: number,
 ): ApiReplyKeyboard | undefined {
   if (!(replyMarkup instanceof GramJs.ReplyKeyboardMarkup || replyMarkup instanceof GramJs.ReplyInlineMarkup)) {
     return undefined;
   }
 
   const markup = replyMarkup.rows.map(({ buttons }) => {
-    return buttons.map((button) => buildReplyButton(button, receiptMessageId));
+    return buttons.map((button) => buildReplyButton(button));
   });
 
   if (markup.every((row) => !row.length)) return undefined;
 
   return {
     [replyMarkup instanceof GramJs.ReplyKeyboardMarkup ? 'keyboardButtons' : 'inlineButtons']: markup,
-    ...(replyMarkup instanceof GramJs.ReplyKeyboardMarkup && {
-      keyboardPlaceholder: replyMarkup.placeholder,
-      isKeyboardSingleUse: replyMarkup.singleUse,
-      isKeyboardSelective: replyMarkup.selective,
-    }),
+    keyboardPlaceholder: replyMarkup instanceof GramJs.ReplyKeyboardMarkup ? replyMarkup.placeholder : undefined,
+    isKeyboardSingleUse: replyMarkup instanceof GramJs.ReplyKeyboardMarkup ? replyMarkup.singleUse : undefined,
+    isKeyboardSelective: replyMarkup instanceof GramJs.ReplyKeyboardMarkup ? replyMarkup.selective : undefined,
   };
 }
 
 function buildReplyButton(
   button: GramJs.KeyboardButton | GramJs.KeyboardInlineButton,
-  receiptMessageId?: number,
 ): ApiKeyboardButton {
-  const { text, style, type } = button;
-  const baseButton = omitUndefined<ApiKeyboardButtonBase>({
-    style: style && buildApiKeyboardButtonStyle(style),
-  });
-
-  if (type instanceof GramJs.ButtonTypeDefault) {
-    return {
-      ...baseButton,
-      type: 'command',
-      text,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeUrl) {
-    return {
-      ...baseButton,
-      type: 'url',
-      text,
-      url: type.url,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeCallback) {
-    if (type.requiresPassword) {
-      return {
-        ...baseButton,
-        type: 'unsupported',
-        text,
-      };
-    }
-
-    return {
-      ...baseButton,
-      type: 'callback',
-      text,
-      data: serializeBytes(type.data),
-    };
-  }
-
-  if (type instanceof GramJs.ButtonTypeRequestPoll) {
-    return {
-      ...baseButton,
-      type: 'requestPoll',
-      text,
-      isQuiz: type.quiz,
-    };
-  }
-
-  if (type instanceof GramJs.ButtonTypeRequestPhone) {
-    return {
-      ...baseButton,
-      type: 'requestPhone',
-      text,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeBuy) {
-    if (receiptMessageId) {
-      return {
-        ...baseButton,
-        type: 'receipt',
-        receiptMessageId,
-      };
-    }
-
-    return {
-      ...baseButton,
-      type: 'buy',
-      text,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeGame) {
-    return {
-      ...baseButton,
-      type: 'game',
-      text,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeSwitchInline) {
-    return {
-      ...baseButton,
-      type: 'switchBotInline',
-      text,
-      query: type.query,
-      isSamePeer: type.samePeer,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeUserProfile) {
-    return {
-      ...baseButton,
-      type: 'userProfile',
-      text,
-      userId: type.userId.toString(),
-    };
-  }
-
-  if (type instanceof GramJs.ButtonTypeSimpleWebView) {
-    return {
-      ...baseButton,
-      type: 'simpleWebView',
-      text,
-      url: type.url,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeWebView) {
-    return {
-      ...baseButton,
-      type: 'webView',
-      text,
-      url: type.url,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeUrlAuth) {
-    return {
-      ...baseButton,
-      type: 'urlAuth',
-      text,
-      url: type.url,
-      buttonId: type.buttonId,
-    };
-  }
-
-  if (type instanceof GramJs.InlineButtonTypeCopy) {
-    return {
-      ...baseButton,
-      type: 'copy',
-      text,
-      copyText: type.copyText,
-    };
-  }
-
   return {
-    ...baseButton,
-    type: 'unsupported',
-    text,
+    text: button.text,
+    style: button.style && buildApiKeyboardButtonStyle(button.style),
+    action: button instanceof GramJs.KeyboardInlineButton
+      ? buildApiInlineButtonAction(button.type) : buildApiReplyButtonAction(button.type),
   };
 }
 
@@ -495,7 +355,9 @@ export function buildApiMessagesBotApp(botApp: GramJs.messages.BotApp): ApiMessa
   };
 }
 
-export function buildApiInlineQueryPeerType(peerType: GramJs.TypeInlineQueryPeerType): ApiInlineQueryPeerType {
+export function buildApiInlineQueryPeerType(
+  peerType: GramJs.TypeInlineQueryPeerType,
+): ApiInlineQueryPeerType {
   if (peerType instanceof GramJs.InlineQueryPeerTypeBotPM) return 'bots';
   if (peerType instanceof GramJs.InlineQueryPeerTypePM) return 'users';
   if (peerType instanceof GramJs.InlineQueryPeerTypeChat) return 'chats';

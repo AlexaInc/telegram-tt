@@ -4,6 +4,7 @@ import { addCallback, removeCallback } from '../lib/teact/teactn';
 import type {
   ApiAvailableReaction,
   ApiDocument,
+  ApiKeyboardButton,
   ApiMessage,
   ApiPhoto,
   ApiVideo,
@@ -403,6 +404,11 @@ function unsafeMigrateCache(cached: GlobalState, initialState: GlobalState) {
       }
     });
     cached.cacheVersion = 6;
+  }
+
+  if (cached.cacheVersion < 7) {
+    migrateButtonActions(cached);
+    cached.cacheVersion = 7;
   }
 
   if (!cached.auth) {
@@ -949,7 +955,32 @@ function reduceGroupCalls<T extends GlobalState>(global: T): GlobalState['groupC
   };
 }
 
-function reduceAvailableReactions(availableReactions?: ApiAvailableReaction[]): ApiAvailableReaction[] | undefined {
+function reduceAvailableReactions(
+  availableReactions?: ApiAvailableReaction[],
+): ApiAvailableReaction[] | undefined {
   return availableReactions
     ?.map((r) => ({ ...pick(r, ['reaction', 'staticIcon', 'title', 'isInactive']), isLocalCache: true }));
+}
+
+function migrateButtonActions(cached: GlobalState) {
+  Object.values(cached.messages.byChatId).forEach(({ byId, ephemeralById }) => {
+    [...Object.values(byId), ...Object.values(ephemeralById)].forEach((message) => {
+      [message.inlineButtons, message.keyboardButtons].forEach((rows) => {
+        rows?.forEach((row) => row.forEach((button, index) => {
+          if ('action' in button) return;
+          const legacyButton = button as { type: string; text?: string; receiptMessageId?: number };
+          const { text, type, receiptMessageId, ...fields } = legacyButton;
+          if (type === 'receipt' && message.content.invoice) {
+            message.content.invoice.receiptMessageId ||= receiptMessageId;
+          }
+          const { style, ...actionFields } = fields as { style?: ApiKeyboardButton['style'] };
+          row[index] = {
+            text: text || '',
+            style,
+            action: { ...actionFields, type: type === 'receipt' ? 'buy' : type } as ApiKeyboardButton['action'],
+          };
+        }));
+      });
+    });
+  });
 }

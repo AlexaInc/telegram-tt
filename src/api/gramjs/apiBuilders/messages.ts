@@ -260,10 +260,7 @@ export function buildApiMessageWithChatId(
   const isEdited = Boolean(mtpMessage.editDate) && !mtpMessage.editHide;
   const {
     inlineButtons, keyboardButtons, keyboardPlaceholder, isKeyboardSingleUse, isKeyboardSelective,
-  } = buildReplyButtons(
-    mtpMessage.replyMarkup,
-    mtpMessage.media instanceof GramJs.MessageMediaInvoice ? mtpMessage.media.receiptMsgId : undefined,
-  ) || {};
+  } = buildReplyButtons(mtpMessage.replyMarkup) || {};
   const { mediaUnread: isMediaUnread, postAuthor } = mtpMessage;
   const groupedId = mtpMessage.groupedId !== undefined ? String(mtpMessage.groupedId) : undefined;
   const isInAlbum = Boolean(groupedId) && !(content.document || content.audio || content.sticker);
@@ -387,7 +384,10 @@ function buildApiSuggestedPost(suggestedPost: GramJs.SuggestedPost): ApiSuggeste
   };
 }
 
-function buildApiMessageForwardInfo(fwdFrom: GramJs.MessageFwdHeader, isChatWithSelf = false): ApiMessageForwardInfo {
+function buildApiMessageForwardInfo(
+  fwdFrom: GramJs.MessageFwdHeader,
+  isChatWithSelf = false,
+): ApiMessageForwardInfo {
   const savedFromPeerId = fwdFrom.savedFromPeer && getApiChatIdFromMtpPeer(fwdFrom.savedFromPeer);
   const fromId = fwdFrom.fromId && getApiChatIdFromMtpPeer(fwdFrom.fromId);
 

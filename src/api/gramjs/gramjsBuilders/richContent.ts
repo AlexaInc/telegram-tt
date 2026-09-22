@@ -1,15 +1,21 @@
 import { Api as GramJs } from '../../../lib/gramjs';
 
 import type {
+  ApiInlineButtonAction,
   ApiInputRichMessage,
   ApiPageBlock,
   ApiPageListItem,
   ApiPageListOrderedItem,
   ApiPageTableCell,
   ApiPageTableRow,
+  ApiRichButton,
   ApiRichText,
   ApiRichTextDate,
 } from '../../types';
+
+import { MAX_BUTTONS_PER_ROW, normalizeButtonText } from '../../../global/helpers/buttons';
+import { hasRichText } from '../../../util/richText';
+import { buildInputUserFromLocalDb } from './index';
 
 const DEFAULT_STRING = '';
 const TEXT_BLOCK_TYPES = new Set<ApiPageBlock['type']>([
@@ -31,7 +37,7 @@ const TEXT_BLOCK_TYPES = new Set<ApiPageBlock['type']>([
 ]);
 
 export function buildInputRichMessage(value: ApiInputRichMessage): GramJs.InputRichMessage | undefined {
-  const blocks = value.blocks.map(buildMtpPageBlock);
+  const blocks = buildMtpPageBlocks(value.blocks);
   if (!blocks.length || blocks.some((block) => !block)) {
     return undefined;
   }
@@ -41,6 +47,12 @@ export function buildInputRichMessage(value: ApiInputRichMessage): GramJs.InputR
     noautolink: value.shouldDisableAutoLink,
     blocks: blocks as GramJs.TypePageBlock[],
   });
+}
+
+function buildMtpPageBlocks(blocks: ApiPageBlock[]) {
+  return blocks.filter((block) => block.type !== 'buttonRow'
+    || block.buttons.some((button) => hasRichText(normalizeButtonText(button.text))))
+    .map(buildMtpPageBlock);
 }
 
 function buildMtpPageBlock(block: ApiPageBlock): GramJs.TypePageBlock | undefined {
@@ -54,6 +66,19 @@ function buildMtpPageBlock(block: ApiPageBlock): GramJs.TypePageBlock | undefine
   }
 
   switch (block.type) {
+    case 'buttonRow': {
+      const buttons = block.buttons.filter((button) => hasRichText(normalizeButtonText(button.text)))
+        .map((button) => buildMtpRichButton(button, GramJs.PageButton));
+      if (!buttons.length || buttons.length > MAX_BUTTONS_PER_ROW || buttons.some((button) => !button)) {
+        return undefined;
+      }
+      return new GramJs.PageBlockButtonRow({
+        buttons: buttons as GramJs.PageButton[],
+        alignLeft: block.align === 'left' || undefined,
+        alignCenter: block.align === 'center' || undefined,
+        alignRight: block.align === 'right' || undefined,
+      });
+    }
     case 'divider':
       return new GramJs.PageBlockDivider();
     case 'blockquote':
@@ -135,8 +160,11 @@ function buildQuotePageBlock(
     : new GramJs.PageBlockBlockquote({ text: mtpText, caption: mtpCaption });
 }
 
-function buildBlockquoteBlocksPageBlock(blocks: ApiPageBlock[], caption: ApiRichText) {
-  const mtpBlocks = blocks.map(buildMtpPageBlock);
+function buildBlockquoteBlocksPageBlock(
+  blocks: ApiPageBlock[],
+  caption: ApiRichText,
+) {
+  const mtpBlocks = buildMtpPageBlocks(blocks);
   const mtpCaption = buildMtpRichText(caption);
 
   if (!mtpCaption || !mtpBlocks.length || mtpBlocks.some((block) => !block)) {
@@ -149,9 +177,13 @@ function buildBlockquoteBlocksPageBlock(blocks: ApiPageBlock[], caption: ApiRich
   });
 }
 
-function buildDetailsPageBlock(title: ApiRichText, blocks: ApiPageBlock[], isOpen?: true) {
+function buildDetailsPageBlock(
+  title: ApiRichText,
+  blocks: ApiPageBlock[],
+  isOpen?: true,
+) {
   const mtpTitle = buildMtpRichText(title);
-  const mtpBlocks = blocks.map(buildMtpPageBlock);
+  const mtpBlocks = buildMtpPageBlocks(blocks);
 
   if (!mtpTitle || mtpBlocks.some((block) => !block)) {
     return undefined;
@@ -166,6 +198,9 @@ function buildDetailsPageBlock(title: ApiRichText, blocks: ApiPageBlock[], isOpe
 
 function buildMtpRichText(text: ApiRichText): GramJs.TypeRichText | undefined {
   switch (text.type) {
+    case 'button':
+      return hasRichText(normalizeButtonText(text.text))
+        ? buildMtpRichButton(text, GramJs.TextButton) : new GramJs.TextEmpty();
     case 'empty':
       return new GramJs.TextEmpty();
     case 'plain':
@@ -316,7 +351,7 @@ function buildMtpPageListItem(item: ApiPageListItem): GramJs.TypePageListItem | 
     }) : undefined;
   }
 
-  const blocks = item.blocks.map(buildMtpPageBlock);
+  const blocks = buildMtpPageBlocks(item.blocks);
   if (!blocks.length || blocks.some((block) => !block)) {
     return undefined;
   }
@@ -341,7 +376,7 @@ function buildMtpPageListOrderedItem(item: ApiPageListOrderedItem): GramJs.TypeP
     }) : undefined;
   }
 
-  const blocks = item.blocks.map(buildMtpPageBlock);
+  const blocks = buildMtpPageBlocks(item.blocks);
   if (!blocks.length || blocks.some((block) => !block)) {
     return undefined;
   }
@@ -396,4 +431,42 @@ function buildDateRichText(text: ApiRichTextDate) {
     longDate: text.longDate,
     dayOfWeek: text.dayOfWeek,
   }) : undefined;
+}
+
+function buildMtpRichButton<T extends GramJs.TextButton | GramJs.PageButton>(
+  button: ApiRichButton,
+  Constructor: new(options: ConstructorParameters<typeof GramJs.PageButton>[0]) => T,
+): T | undefined {
+  const type = buildInputInlineButtonAction(button.action);
+  const text = buildMtpRichText(normalizeButtonText(button.text));
+  if (!type || !text) return undefined;
+  return new Constructor({
+    text,
+    type,
+    style: button.style && new GramJs.RichButtonStyle({
+      bgPrimary: button.style.type === 'primary' || undefined,
+      bgDanger: button.style.type === 'destructive' || undefined,
+      bgSuccess: button.style.type === 'success' || undefined,
+      link: button.style.isLink || undefined,
+    }),
+  });
+}
+
+function buildInputInlineButtonAction(action: ApiInlineButtonAction): GramJs.TypeInlineButtonType | undefined {
+  switch (action.type) {
+    case 'url':
+      return action.url ? new GramJs.InlineButtonTypeUrl({ url: action.url }) : undefined;
+    case 'copy':
+      return action.copyText ? new GramJs.InlineButtonTypeCopy({ copyText: action.copyText }) : undefined;
+    case 'disabled':
+      return new GramJs.InlineButtonTypeDisabled();
+    case 'userProfile': {
+      const userId = buildInputUserFromLocalDb(action.userId);
+      return userId ? new GramJs.InputInlineButtonTypeUserProfile({
+        userId,
+      }) : undefined;
+    }
+    default:
+      return undefined;
+  }
 }

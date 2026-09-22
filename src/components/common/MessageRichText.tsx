@@ -181,6 +181,7 @@ function countRichTextCustomEmojis(text: ApiRichText): number {
     case 'bankCard':
     case 'mentionName':
     case 'date':
+    case 'button':
       return countRichTextCustomEmojis(text.text);
     default:
       return 0;
@@ -195,16 +196,24 @@ function hasPageBlocksSpoileredCustomEmojis(blocks: ApiPageBlock[]): boolean {
   return hasPageBlocksMatchingRichText(blocks, hasRichTextSpoileredCustomEmojis);
 }
 
-function sumPageBlocksMatchingRichText(blocks: ApiPageBlock[], predicate: (text: ApiRichText) => number): number {
+function sumPageBlocksMatchingRichText(
+  blocks: ApiPageBlock[],
+  predicate: (text: ApiRichText) => number,
+): number {
   return blocks.reduce((total, block) => total + sumPageBlockMatchingRichText(block, predicate), 0);
 }
 
-function hasPageBlocksMatchingRichText(blocks: ApiPageBlock[], predicate: (text: ApiRichText) => boolean): boolean {
+function hasPageBlocksMatchingRichText(
+  blocks: ApiPageBlock[],
+  predicate: (text: ApiRichText) => boolean,
+): boolean {
   return blocks.some((block) => hasPageBlockMatchingRichText(block, predicate));
 }
 
 function sumPageBlockMatchingRichText(block: ApiPageBlock, predicate: (text: ApiRichText) => number): number {
   switch (block.type) {
+    case 'buttonRow':
+      return block.buttons.reduce((total, button) => total + predicate(button.text), 0);
     case 'unsupported':
     case 'divider':
     case 'anchor':
@@ -265,8 +274,13 @@ function sumPageBlockMatchingRichText(block: ApiPageBlock, predicate: (text: Api
   }
 }
 
-function hasPageBlockMatchingRichText(block: ApiPageBlock, predicate: (text: ApiRichText) => boolean): boolean {
+function hasPageBlockMatchingRichText(
+  block: ApiPageBlock,
+  predicate: (text: ApiRichText) => boolean,
+): boolean {
   switch (block.type) {
+    case 'buttonRow':
+      return block.buttons.some((button) => predicate(button.text));
     case 'unsupported':
     case 'divider':
     case 'anchor':
@@ -326,11 +340,17 @@ function hasPageBlockMatchingRichText(block: ApiPageBlock, predicate: (text: Api
   }
 }
 
-function hasPageCaptionMatchingRichText(caption: ApiPageCaption, predicate: (text: ApiRichText) => boolean): boolean {
+function hasPageCaptionMatchingRichText(
+  caption: ApiPageCaption,
+  predicate: (text: ApiRichText) => boolean,
+): boolean {
   return predicate(caption.text) || predicate(caption.credit);
 }
 
-function sumPageCaptionMatchingRichText(caption: ApiPageCaption, predicate: (text: ApiRichText) => number): number {
+function sumPageCaptionMatchingRichText(
+  caption: ApiPageCaption,
+  predicate: (text: ApiRichText) => number,
+): number {
   return predicate(caption.text) + predicate(caption.credit);
 }
 

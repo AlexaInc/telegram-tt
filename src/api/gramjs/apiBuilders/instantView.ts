@@ -10,9 +10,11 @@ import type {
   ApiPageTableCell,
   ApiPageTableRow,
   ApiPhoto,
+  ApiRichButton,
   ApiRichText,
 } from '../../types';
 
+import { normalizeButtonText } from '../../../global/helpers/buttons';
 import {
   addDocumentToLocalDb,
   addMessageRepairInfo,
@@ -20,6 +22,7 @@ import {
   addWebPageRepairInfo,
   type MediaRepairContext,
 } from '../helpers/localDb';
+import { buildApiInlineButtonAction } from './buttons';
 import { buildApiPhoto } from './common';
 import { type ApiPageDocument, buildApiPageDocument } from './media';
 import { buildGeoPoint } from './messageContent';
@@ -100,6 +103,10 @@ function buildApiPageDocumentsById(
 }
 
 export function buildApiRichText(text: GramJs.TypeRichText, context: PageMediaContext): ApiRichText {
+  if (text instanceof GramJs.TextButton) {
+    return { type: 'button', ...buildApiRichButton(text, context) };
+  }
+
   if (text instanceof GramJs.TextEmpty) {
     return { type: 'empty' };
   }
@@ -258,6 +265,14 @@ export function buildApiRichText(text: GramJs.TypeRichText, context: PageMediaCo
 export function buildApiPageBlock(block: GramJs.TypePageBlock, context: PageMediaContext): ApiPageBlock {
   if (block instanceof GramJs.PageBlockUnsupported) {
     return { type: 'unsupported' };
+  }
+
+  if (block instanceof GramJs.PageBlockButtonRow) {
+    return {
+      type: 'buttonRow',
+      buttons: block.buttons.map((button) => buildApiRichButton(button, context)),
+      align: block.alignLeft ? 'left' : block.alignCenter ? 'center' : block.alignRight ? 'right' : undefined,
+    };
   }
 
   if (block instanceof GramJs.PageBlockTitle) {
@@ -656,4 +671,19 @@ function addPageDocumentToLocalDb(document: GramJs.TypeDocument, context?: PageR
   }
 
   addDocumentToLocalDb(repairableDocument);
+}
+
+function buildApiRichButton(
+  button: GramJs.TextButton | GramJs.PageButton,
+  context: PageMediaContext,
+): ApiRichButton {
+  const { style } = button;
+  return {
+    text: normalizeButtonText(buildApiRichText(button.text, context)),
+    action: buildApiInlineButtonAction(button.type),
+    style: style ? {
+      type: style.bgPrimary ? 'primary' : style.bgDanger ? 'destructive' : style.bgSuccess ? 'success' : undefined,
+      isLink: style.link,
+    } : undefined,
+  };
 }

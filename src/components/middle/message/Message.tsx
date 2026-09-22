@@ -1719,7 +1719,7 @@ const Message = ({
   });
 
   const handleLocalInlineButtonClick = useLastCallback((button: ApiKeyboardButton) => {
-    if (button.type === 'openThread') {
+    if (button.action.type === 'openThread') {
       openThread({
         chatId,
         threadId: messageTopic!.id,
@@ -1727,8 +1727,8 @@ const Message = ({
       return;
     }
 
-    if (button.type === 'suggestedMessage') {
-      if (button.buttonType === 'approve') {
+    if (button.action.type === 'suggestedMessage') {
+      if (button.action.buttonType === 'approve') {
         openSuggestedPostApprovalModal({
           chatId,
           messageId: message.id,
@@ -1736,7 +1736,7 @@ const Message = ({
         return;
       }
 
-      if (button.buttonType === 'decline') {
+      if (button.action.buttonType === 'decline') {
         openDeclineDialog();
         return;
       }
@@ -1744,7 +1744,7 @@ const Message = ({
       clickSuggestedMessageButton({
         chatId,
         messageId: message.id,
-        button,
+        button: { ...button, action: button.action },
       });
       return;
     }
@@ -1891,21 +1891,17 @@ const Message = ({
     return [
       [
         {
-          type: 'suggestedMessage',
-          buttonType: 'decline',
+          action: { type: 'suggestedMessage', buttonType: 'decline' },
           text: lang('SuggestedPostDecline'),
         },
         {
-          type: 'suggestedMessage',
-          buttonType: 'approve',
+          action: { type: 'suggestedMessage', buttonType: 'approve', disabled: isSuggestedPostExpired },
           text: lang('SuggestedPostApprove'),
-          disabled: isSuggestedPostExpired,
         },
       ],
       [
         {
-          type: 'suggestedMessage',
-          buttonType: 'suggestChanges',
+          action: { type: 'suggestedMessage', buttonType: 'suggestChanges' },
           text: lang('SuggestedPostSuggestChanges'),
         },
       ],
@@ -1919,7 +1915,7 @@ const Message = ({
 
     return [
       [{
-        type: 'openThread',
+        action: { type: 'openThread' },
         text: lang('BotForumContinueThreadButton'),
       }],
     ];
@@ -2055,6 +2051,7 @@ const Message = ({
         {message.inlineButtons && (
           <InlineButtons
             inlineButtons={message.inlineButtons}
+            isReceipt={Boolean(invoice?.receiptMessageId)}
             isEphemeral={message.isEphemeral}
             onClick={handleInlineButtonClick}
           />

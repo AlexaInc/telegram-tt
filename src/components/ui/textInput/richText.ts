@@ -9,12 +9,16 @@ import type {
   ApiPageListItem,
   ApiPageListOrderedItem,
   ApiPageTableCell,
+  ApiRichButton,
   ApiRichText,
   ApiRichTextDate,
 } from '../../../api/types';
 import type { FormattedDateEntityOptions } from '../../../util/dates/formattedDate';
 import { ApiMessageEntityTypes } from '../../../api/types';
 
+import {
+  canAuthorButton, getRichMessageButtons, MAX_BUTTONS_PER_ROW, normalizeButtonText,
+} from '../../../global/helpers/buttons';
 import { getRichTextPlainText, hasRichText } from '../../../global/helpers/richMessage';
 import {
   getDefaultFormattedDateText,
@@ -34,6 +38,14 @@ import {
   TABLE_WRAPPER_NODE_NAME,
   UNSUPPORTED_NODE_NAME,
 } from '../../../util/tiptap/constants';
+import {
+  buildButtonAction,
+  buildButtonAttrs,
+  BUTTON_ROW_NODE_NAME,
+  getButtonColor,
+  getButtonRowAlign,
+  RICH_BUTTON_NODE_NAME,
+} from '../../../util/tiptap/extensions/richButton';
 
 type InlineEntityType =
   ApiMessageEntityTypes.Bold
@@ -147,7 +159,8 @@ export function getRichInputAsFormatted(
 }
 
 export function isValidInputRichMessage(value: ApiInputRichMessage) {
-  return Boolean(value.blocks.length) && !hasUnsupportedRichBlocks(value);
+  return Boolean(value.blocks.length) && !hasUnsupportedRichBlocks(value)
+    && getRichMessageButtons(value).every(({ action }) => Boolean(buildButtonAction(buildButtonAttrs(action))));
 }
 
 export function buildRichMessageFromTiptapJson(doc: TiptapJsonContent): ApiInputRichMessage {
@@ -190,6 +203,10 @@ export function buildRichMessageFromFormatted(value?: ApiFormattedText): ApiInpu
 
 function buildBlockFromTiptapNode(node: TiptapJsonContent): ApiPageBlock | undefined {
   switch (node.type) {
+    case BUTTON_ROW_NODE_NAME: {
+      const buttons = node.content?.map(buildRichButtonFromTiptapNode).filter(Boolean) || [];
+      return buttons.length ? { type: 'buttonRow', buttons, align: getButtonRowAlign(node.attrs?.align) } : undefined;
+    }
     case 'paragraph':
       return buildParagraphBlockFromTiptapNode(node);
     case 'heading':
@@ -233,6 +250,10 @@ function buildTiptapNodesFromBlock(
   options?: RichMessageToTiptapOptions,
 ): TiptapJsonContent[] {
   switch (block.type) {
+    case 'buttonRow': {
+      const content = block.buttons.filter((button) => canAuthorButton(button.action)).map(buildTiptapButtonNode);
+      return content.length ? [{ type: BUTTON_ROW_NODE_NAME, attrs: { align: block.align }, content }] : [];
+    }
     case 'paragraph':
       return buildTiptapParagraphNodes(block.text);
     case 'title':
@@ -542,7 +563,9 @@ function areListItemsCheckboxes(items: ApiPageListItem[] | ApiPageListOrderedIte
   return Boolean(items.length) && items.every((item) => item.isCheckbox);
 }
 
-function buildTiptapTableNode(block: Extract<ApiPageBlock, { type: 'table' }>): TiptapJsonContent | undefined {
+function buildTiptapTableNode(
+  block: Extract<ApiPageBlock, { type: 'table' }>,
+): TiptapJsonContent | undefined {
   const content = block.rows.map((row) => ({
     type: 'tableRow',
     content: row.cells.map((cell) => ({
@@ -625,8 +648,13 @@ function buildTiptapBlockquoteBlocksNode(
   };
 }
 
-function buildTiptapInlineContentFromRichText(text: ApiRichText, marks: TiptapMark[] = []): TiptapJsonContent[] {
+export function buildTiptapInlineContentFromRichText(
+  text: ApiRichText,
+  marks: TiptapMark[] = [],
+): TiptapJsonContent[] {
   switch (text.type) {
+    case 'button':
+      return canAuthorButton(text.action) ? [buildTiptapButtonNode(text)] : [];
     case 'empty':
       return [];
     case 'plain':
@@ -962,7 +990,9 @@ function buildBlocksFromTiptapContent(content?: TiptapJsonContent[]) {
     .filter((block): block is ApiPageBlock => Boolean(block)) || []);
 }
 
-function isSimpleListItemContent(blocks: ApiPageBlock[]): blocks is [Extract<ApiPageBlock, { type: 'paragraph' }>] {
+function isSimpleListItemContent(
+  blocks: ApiPageBlock[],
+): blocks is [Extract<ApiPageBlock, { type: 'paragraph' }>] {
   return blocks.length === 1 && blocks[0].type === 'paragraph';
 }
 
@@ -1049,11 +1079,16 @@ function buildRichTextFromTiptapParagraphs(content?: TiptapJsonContent[]): ApiRi
   return buildConcatRichText(textsWithSeparators);
 }
 
-function buildRichTextFromTiptapContent(content?: TiptapJsonContent[]): ApiRichText {
+export function buildRichTextFromTiptapContent(content?: TiptapJsonContent[]): ApiRichText {
   return buildConcatRichText(content?.map(buildRichTextFromTiptapNode) || []);
 }
 
 function buildRichTextFromTiptapNode(node: TiptapJsonContent): ApiRichText {
+  if (node.type === RICH_BUTTON_NODE_NAME) {
+    const button = buildRichButtonFromTiptapNode(node);
+    return button ? { type: 'button', ...button } : EMPTY_RICH_TEXT;
+  }
+
   if (node.type === 'text') {
     return applyTiptapMarks({ type: 'plain', text: node.text || DEFAULT_STRING }, node.marks);
   }
@@ -1249,6 +1284,9 @@ function getTiptapMarkNumberAttr(mark: TiptapMark, name: string): number | undef
 
 function hasUnsupportedRichBlock(block: ApiPageBlock): boolean {
   switch (block.type) {
+    case 'buttonRow':
+      return !block.buttons.length || block.buttons.length > MAX_BUTTONS_PER_ROW
+        || block.buttons.some((button) => !canAuthorButton(button.action));
     case 'blockquoteBlocks':
     case 'details':
       return block.blocks.some(hasUnsupportedRichBlock);
@@ -1280,6 +1318,10 @@ function hasUnsupportedRichBlock(block: ApiPageBlock): boolean {
 
 function getBlockAsFormatted(block: ApiPageBlock, isApproximate: boolean): ApiFormattedText | undefined {
   switch (block.type) {
+    case 'buttonRow':
+      return isApproximate ? {
+        text: block.buttons.map((button) => getRichTextPlainText(button.text)).join(' '),
+      } : undefined;
     case 'paragraph':
       return getRichTextAsFormatted(block.text, isApproximate);
     case 'header':
@@ -1491,7 +1533,9 @@ function prefixFormattedLines(
   };
 }
 
-function getDetailsAsFormatted(block: Extract<ApiPageBlock, { type: 'details' }>): ApiFormattedText | undefined {
+function getDetailsAsFormatted(
+  block: Extract<ApiPageBlock, { type: 'details' }>,
+): ApiFormattedText | undefined {
   const title = getNestedRichTextAsFormatted(block.title, ApiMessageEntityTypes.Bold, true);
   const content = getBlocksAsFormatted(block.blocks, true);
   if (!title || !content) {
@@ -1566,6 +1610,8 @@ function joinFormattedTexts(parts: ApiFormattedText[], separator: string): ApiFo
 
 function getRichTextAsFormatted(text: ApiRichText, isApproximate: boolean): ApiFormattedText | undefined {
   switch (text.type) {
+    case 'button':
+      return isApproximate ? getRichTextAsFormatted(text.text, true) : undefined;
     case 'empty':
       return { text: '' };
     case 'plain':
@@ -1641,7 +1687,10 @@ function getNestedRichTextAsFormatted(
   });
 }
 
-function wrapFormattedTextWithEntity(formatted: ApiFormattedText, entity: ApiMessageEntity): ApiFormattedText {
+function wrapFormattedTextWithEntity(
+  formatted: ApiFormattedText,
+  entity: ApiMessageEntity,
+): ApiFormattedText {
   return {
     ...formatted,
     entities: formatted.text ? [{
@@ -2072,5 +2121,24 @@ function buildFormattedDateOptionsFromTiptapNode(node: TiptapJsonContent): Forma
     longDate: getTiptapBooleanAttr(node, 'longDate') ? true : undefined,
     shortTime: getTiptapBooleanAttr(node, 'shortTime') ? true : undefined,
     longTime: getTiptapBooleanAttr(node, 'longTime') ? true : undefined,
+  };
+}
+
+function buildTiptapButtonNode(button: ApiRichButton): TiptapJsonContent {
+  return {
+    type: RICH_BUTTON_NODE_NAME,
+    attrs: buildButtonAttrs(button.action, button.style),
+    content: buildTiptapInlineContentFromRichText(normalizeButtonText(button.text)),
+  };
+}
+
+function buildRichButtonFromTiptapNode(node: TiptapJsonContent): ApiRichButton | undefined {
+  const action = node.attrs?.buttonType === 'url' && !node.attrs.url
+    ? { type: 'url' as const, url: '' } : buildButtonAction(node.attrs);
+  if (!action) return undefined;
+  return {
+    action,
+    text: normalizeButtonText(buildRichTextFromTiptapContent(node.content)),
+    style: { type: getButtonColor(node.attrs?.color) },
   };
 }
