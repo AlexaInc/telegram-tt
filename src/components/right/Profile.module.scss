@@ -1,10 +1,32 @@
 @use '../../styles/mixins';
 
+// Stacking context keeps the wallpaper (`z-index: -1`) above the column background
+.wrapper {
+  isolation: isolate;
+  position: relative;
+  height: 100%;
+}
+
+.wallpaper {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+}
+
 .root {
   overflow-x: hidden;
   display: flex;
   flex-direction: column;
   height: 100%;
+
+  // The wallpaper behind the surface shows through, including under the scrollbar
+  &.withWallpaper {
+    background-color: transparent;
+
+    .sharedMediaTabs {
+      --fade-mask-color: transparent;
+    }
+  }
 
   :global(.FloatingActionButton) {
     z-index: 3;
@@ -244,6 +266,12 @@
     :global(.message-transfer-progress) {
       display: none;
     }
+  }
+
+  &.pollsList {
+    padding: 1rem;
+
+    @include mixins.adapt-padding-to-scrollbar(1rem);
   }
 
   &.audioList,

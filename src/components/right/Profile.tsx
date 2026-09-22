@@ -97,6 +97,7 @@ import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
 import useOldLang from '../../hooks/useOldLang';
+import useShowTransition from '../../hooks/useShowTransition';
 import useSyncEffect from '../../hooks/useSyncEffect';
 import useSyncEffectWithPrevDeps from '../../hooks/useSyncEffectWithPrevDeps.ts';
 import useAsyncRendering from './hooks/useAsyncRendering';
@@ -117,6 +118,8 @@ import PrivateChatInfo from '../common/PrivateChatInfo';
 import ChatExtra from '../common/profile/ChatExtra';
 import ProfileInfo from '../common/profile/ProfileInfo.tsx';
 import ProfileMusic from '../common/ProfileMusic';
+import ProfilePoll from '../common/ProfilePoll';
+import Wallpaper from '../common/Wallpaper';
 import WebLink from '../common/WebLink';
 import Island from '../gili/layout/Island';
 import Surface from '../gili/layout/Surface';
@@ -225,6 +228,9 @@ const TABS: LocalTabProps[] = [
 const CONTENT_PANEL_SHOW_DELAY = 300;
 const HIDDEN_RENDER_DELAY = 1000;
 const INTERSECTION_THROTTLE = 500;
+const NESTED_CONTENT_SELECTOR = (
+  `.Transition > .Transition_slide-active > .Transition > .Transition_slide-active > .${styles.content}`
+);
 
 const VALID_CHANNEL_MAIN_TAB_TYPES = new Set<StringAutocomplete<ApiProfileTab>>([
   'stories', 'gifts', 'media', 'documents', 'audio', 'voice', 'links', 'gif',
@@ -233,13 +239,13 @@ const VALID_USER_MAIN_TAB_TYPES = new Set<StringAutocomplete<ApiProfileTab>>([
   'stories', 'gifts',
 ]);
 const SHARED_MEDIA_TYPES = new Set<StringAutocomplete<SharedMediaType>>([
-  'media', 'documents', 'links', 'audio', 'voice', 'gif',
+  'media', 'documents', 'links', 'audio', 'voice', 'gif', 'polls',
 ]);
 const NON_ISLAND_TABS = new Set<ProfileTabType>([
-  'media', 'gif', 'stories', 'storiesArchive', 'previewMedia', 'gifts',
+  'media', 'gif', 'stories', 'storiesArchive', 'previewMedia', 'gifts', 'polls',
 ]);
 const MESSAGE_BASED_TABS = new Set<ProfileTabType>([
-  'media', 'gif', 'documents', 'links', 'audio', 'voice',
+  'media', 'gif', 'documents', 'links', 'audio', 'voice', 'polls',
 ]);
 
 const CONTENT_LIST_CLASS: Record<string, string> = {
@@ -248,6 +254,7 @@ const CONTENT_LIST_CLASS: Record<string, string> = {
   links: styles.linksList,
   audio: styles.audioList,
   voice: styles.voiceList,
+  polls: styles.pollsList,
   playlist: styles.playlistList,
   gif: styles.gifList,
   stories: styles.storiesList,
@@ -418,6 +425,10 @@ const Profile = ({
     // Voice messages filter currently does not work in forum topics. Return it when it's fixed on the server side.
     if (!isTopicInfo && !isOwnProfile) {
       arr.push({ type: 'voice', key: 'ProfileTabVoice' });
+    }
+
+    if (!isOwnProfile) {
+      arr.push({ type: 'polls', key: 'ProfileTabPolls' });
     }
 
     if (hasCommonChatsTab && !isOwnProfile) {
@@ -648,6 +659,13 @@ const Profile = ({
   });
 
   const shouldWrapInIsland = !NON_ISLAND_TABS.has(resultType);
+
+  // The wallpaper lives outside the scroll container, so it also spans the scrollbar gutter
+  const hasPollsWallpaper = resultType === 'polls' && Boolean(viewportIds?.length);
+  const { ref: wallpaperRef, shouldRender: shouldRenderWallpaper } = useShowTransition({
+    isOpen: hasPollsWallpaper,
+    withShouldRender: true,
+  });
 
   useEffect(() => {
     if (getMore && !viewportIds && isSynced) {
@@ -1037,6 +1055,9 @@ const Profile = ({
         case 'voice':
           text = oldLang('lng_media_audio_empty');
           break;
+        case 'polls':
+          text = lang('ProfilePollsEmpty');
+          break;
         case 'stories':
           text = oldLang('StoryList.SavedEmptyState.Title');
           break;
@@ -1182,6 +1203,17 @@ const Profile = ({
               />
             );
           })
+        ) : resultType === 'polls' ? (
+          (viewportIds as number[]).filter((id) => Boolean(messagesById[id])).map((id) => (
+            <ProfilePoll
+              key={id}
+              message={messagesById[id]}
+              theme={theme}
+              observeIntersection={observeIntersectionForMedia}
+              contextActions={getMessageContextActions(messagesById[id])}
+              onDateClick={handleMessageFocus}
+            />
+          ))
         ) : resultType === 'members' ? (
           (viewportIds as string[]).map((id, i) => (
             <ListItem
@@ -1408,61 +1440,69 @@ const Profile = ({
   }
 
   return (
-    <Surface
-      ref={containerRef}
-      scrollable
-      noPadding
-      className={buildClassName(styles.root, 'Profile', isGeneralSavedMessages && 'is-saved-messages')}
-      onScroll={handleScroll}
-    >
-      {!noProfileInfo && !isSavedMessages && (
-        renderProfileInfo(
-          monoforumChannel?.id || profileId,
-          isRightColumnShown && canRenderContent,
-        )
+    <div className={styles.wrapper}>
+      {shouldRenderWallpaper && (
+        <Wallpaper containerRef={wallpaperRef} className={styles.wallpaper} isStatic />
       )}
-      {!isRestricted && (
-        <>
-          <div
-            className={buildClassName(styles.sharedMediaTabs, 'shared-media-tabs')}
-          >
-            <TabList
-              activeTab={activeTabIndex}
-              tabs={tabs}
-              onSwitchTab={handleSwitchTab}
-            />
-          </div>
-          <div
-            className={styles.sharedMedia}
-          >
-            <Transition
-              ref={transitionRef}
-              name={shouldSkipTransitionRef.current ? 'none'
-                : resolveTransitionName('slideOptimized', animationLevel, undefined, lang.isRtl)}
-              activeKey={activeKey}
-              renderCount={tabs.length}
-              className="shared-media-transition"
-              contentSelector={shouldUseTransitionForContent
-                ? `.Transition > .Transition_slide-active > .Transition > .Transition_slide-active > .${styles.content}`
-                : undefined}
+      <Surface
+        ref={containerRef}
+        scrollable
+        noPadding
+        className={buildClassName(
+          styles.root,
+          'Profile',
+          isGeneralSavedMessages && 'is-saved-messages',
+          shouldRenderWallpaper && styles.withWallpaper,
+        )}
+        onScroll={handleScroll}
+      >
+        {!noProfileInfo && !isSavedMessages && (
+          renderProfileInfo(
+            monoforumChannel?.id || profileId,
+            isRightColumnShown && canRenderContent,
+          )
+        )}
+        {!isRestricted && (
+          <>
+            <div
+              className={buildClassName(styles.sharedMediaTabs, 'shared-media-tabs')}
             >
-              {renderContent()}
-            </Transition>
-          </div>
-        </>
-      )}
+              <TabList
+                activeTab={activeTabIndex}
+                tabs={tabs}
+                onSwitchTab={handleSwitchTab}
+              />
+            </div>
+            <div
+              className={styles.sharedMedia}
+            >
+              <Transition
+                ref={transitionRef}
+                name={shouldSkipTransitionRef.current ? 'none'
+                  : resolveTransitionName('slideOptimized', animationLevel, undefined, lang.isRtl)}
+                activeKey={activeKey}
+                renderCount={tabs.length}
+                className="shared-media-transition"
+                contentSelector={shouldUseTransitionForContent ? NESTED_CONTENT_SELECTOR : undefined}
+              >
+                {renderContent()}
+              </Transition>
+            </div>
+          </>
+        )}
 
-      {canAddMembers && (
-        <FloatingActionButton
-          className={buildClassName(!isActive && styles.hidden)}
-          style={createVtnStyle('profileFab')}
-          isShown={canRenderContent}
-          onClick={handleNewMemberDialogOpen}
-          ariaLabel={oldLang('lng_channel_add_users')}
-          iconName="add-user-filled"
-        />
-      )}
-    </Surface>
+        {canAddMembers && (
+          <FloatingActionButton
+            className={buildClassName(!isActive && styles.hidden)}
+            style={createVtnStyle('profileFab')}
+            isShown={canRenderContent}
+            onClick={handleNewMemberDialogOpen}
+            ariaLabel={oldLang('lng_channel_add_users')}
+            iconName="add-user-filled"
+          />
+        )}
+      </Surface>
+    </div>
   );
 };
 

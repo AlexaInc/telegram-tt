@@ -588,6 +588,10 @@ export function getMessageContentIds(
       };
       break;
 
+    case 'polls':
+      validator = getMessagePollId;
+      break;
+
     default:
       return [] as Array<number>;
   }

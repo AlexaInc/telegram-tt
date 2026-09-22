@@ -12,7 +12,7 @@ import sortChatIds from '../../common/helpers/sortChatIds';
 import useInfiniteScroll from '../../../hooks/useInfiniteScroll';
 import useSyncEffect from '../../../hooks/useSyncEffect';
 
-const SHARED_MEDIA_TYPES: SharedMediaType[] = ['media', 'documents', 'links', 'audio', 'voice', 'gif'];
+const SHARED_MEDIA_TYPES: SharedMediaType[] = ['media', 'documents', 'links', 'audio', 'voice', 'gif', 'polls'];
 
 export default function useProfileViewportIds({
   loadMoreMembers,
@@ -116,6 +116,10 @@ export default function useProfileViewportIds({
     'voice', resultType, searchMessages, chatMessages, foundIds, threadId,
   );
 
+  const [pollViewportIds, getMorePolls, noProfileInfoForPolls] = useInfiniteScrollForSharedMedia(
+    'polls', resultType, searchMessages, chatMessages, foundIds, threadId,
+  );
+
   const [commonChatViewportIds, getMoreCommonChats, noProfileInfoForCommonChats] = useInfiniteScrollForLoadableItems(
     loadCommonChats, chatIds,
   );
@@ -192,6 +196,11 @@ export default function useProfileViewportIds({
       viewportIds = voiceViewportIds;
       getMore = getMoreVoices;
       noProfileInfo = noProfileInfoForVoices;
+      break;
+    case 'polls':
+      viewportIds = pollViewportIds;
+      getMore = getMorePolls;
+      noProfileInfo = noProfileInfoForPolls;
       break;
     case 'playlist':
       viewportIds = savedMusicViewportIds;

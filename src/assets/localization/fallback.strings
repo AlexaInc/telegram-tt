@@ -2128,6 +2128,8 @@
 "ProfileTabMusic" = "Music";
 "ProfileTabVoice" = "Voice";
 "ProfileTabGifs" = "GIF";
+"ProfileTabPolls" = "Polls";
+"ProfilePollsEmpty" = "No polls yet";
 "ProfileTabSharedGroups" = "Groups";
 "ProfileTabSimilarChannels" = "Similar Channels";
 "ProfileTabSimilarBots" = "Similar Bots";

@@ -1903,6 +1903,9 @@ export async function searchMessagesInChat({
     case 'gif':
       filter = new GramJs.InputMessagesFilterGif();
       break;
+    case 'polls':
+      filter = new GramJs.InputMessagesFilterPoll();
+      break;
     case 'text':
     default: {
       filter = new GramJs.InputMessagesFilterEmpty();

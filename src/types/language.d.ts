@@ -1697,6 +1697,8 @@ export interface LangPair {
   'ProfileTabMusic': undefined;
   'ProfileTabVoice': undefined;
   'ProfileTabGifs': undefined;
+  'ProfileTabPolls': undefined;
+  'ProfilePollsEmpty': undefined;
   'ProfileTabSharedGroups': undefined;
   'ProfileTabSimilarChannels': undefined;
   'ProfileTabSimilarBots': undefined;

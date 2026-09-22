@@ -448,8 +448,9 @@ export type ProfileTabType =
   | 'similarChannels'
   | 'similarBots'
   | 'dialogs'
-  | 'gifts';
-export type SharedMediaType = 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'gif';
+  | 'gifts'
+  | 'polls';
+export type SharedMediaType = 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'gif' | 'polls';
 export type MiddleSearchType = 'chat' | 'myChats' | 'channels';
 export type MiddleSearchParams = {
   requestedQuery?: string;

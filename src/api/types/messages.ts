@@ -1139,7 +1139,7 @@ export type ApiTranscription = {
 };
 
 export type ApiMessageSearchType = 'text' | 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'gif'
-  | 'profilePhoto';
+  | 'polls' | 'profilePhoto';
 export type ApiGlobalMessageSearchType = 'text' |
   'channels' | 'media' | 'documents' | 'links' | 'audio' | 'voice' | 'publicPosts';
 export type ApiMessageSearchContext = 'all' | 'users' | 'groups' | 'channels';
