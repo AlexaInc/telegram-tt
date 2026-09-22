@@ -97,7 +97,6 @@ import { useIntersectionObserver } from '../../hooks/useIntersectionObserver';
 import useLang from '../../hooks/useLang';
 import useLastCallback from '../../hooks/useLastCallback';
 import useOldLang from '../../hooks/useOldLang';
-import useShowTransition from '../../hooks/useShowTransition';
 import useSyncEffect from '../../hooks/useSyncEffect';
 import useSyncEffectWithPrevDeps from '../../hooks/useSyncEffectWithPrevDeps.ts';
 import useAsyncRendering from './hooks/useAsyncRendering';
@@ -119,7 +118,6 @@ import ChatExtra from '../common/profile/ChatExtra';
 import ProfileInfo from '../common/profile/ProfileInfo.tsx';
 import ProfileMusic from '../common/ProfileMusic';
 import ProfilePoll from '../common/ProfilePoll';
-import Wallpaper from '../common/Wallpaper';
 import WebLink from '../common/WebLink';
 import Island from '../gili/layout/Island';
 import Surface from '../gili/layout/Surface';
@@ -659,13 +657,6 @@ const Profile = ({
   });
 
   const shouldWrapInIsland = !NON_ISLAND_TABS.has(resultType);
-
-  // The wallpaper lives outside the scroll container, so it also spans the scrollbar gutter
-  const hasPollsWallpaper = resultType === 'polls' && Boolean(viewportIds?.length);
-  const { ref: wallpaperRef, shouldRender: shouldRenderWallpaper } = useShowTransition({
-    isOpen: hasPollsWallpaper,
-    withShouldRender: true,
-  });
 
   useEffect(() => {
     if (getMore && !viewportIds && isSynced) {
@@ -1440,69 +1431,59 @@ const Profile = ({
   }
 
   return (
-    <div className={styles.wrapper}>
-      {shouldRenderWallpaper && (
-        <Wallpaper containerRef={wallpaperRef} className={styles.wallpaper} isStatic />
+    <Surface
+      ref={containerRef}
+      scrollable
+      noPadding
+      className={buildClassName(styles.root, 'Profile', isGeneralSavedMessages && 'is-saved-messages')}
+      onScroll={handleScroll}
+    >
+      {!noProfileInfo && !isSavedMessages && (
+        renderProfileInfo(
+          monoforumChannel?.id || profileId,
+          isRightColumnShown && canRenderContent,
+        )
       )}
-      <Surface
-        ref={containerRef}
-        scrollable
-        noPadding
-        className={buildClassName(
-          styles.root,
-          'Profile',
-          isGeneralSavedMessages && 'is-saved-messages',
-          shouldRenderWallpaper && styles.withWallpaper,
-        )}
-        onScroll={handleScroll}
-      >
-        {!noProfileInfo && !isSavedMessages && (
-          renderProfileInfo(
-            monoforumChannel?.id || profileId,
-            isRightColumnShown && canRenderContent,
-          )
-        )}
-        {!isRestricted && (
-          <>
-            <div
-              className={buildClassName(styles.sharedMediaTabs, 'shared-media-tabs')}
+      {!isRestricted && (
+        <>
+          <div
+            className={buildClassName(styles.sharedMediaTabs, 'shared-media-tabs')}
+          >
+            <TabList
+              activeTab={activeTabIndex}
+              tabs={tabs}
+              onSwitchTab={handleSwitchTab}
+            />
+          </div>
+          <div
+            className={styles.sharedMedia}
+          >
+            <Transition
+              ref={transitionRef}
+              name={shouldSkipTransitionRef.current ? 'none'
+                : resolveTransitionName('slideOptimized', animationLevel, undefined, lang.isRtl)}
+              activeKey={activeKey}
+              renderCount={tabs.length}
+              className="shared-media-transition"
+              contentSelector={shouldUseTransitionForContent ? NESTED_CONTENT_SELECTOR : undefined}
             >
-              <TabList
-                activeTab={activeTabIndex}
-                tabs={tabs}
-                onSwitchTab={handleSwitchTab}
-              />
-            </div>
-            <div
-              className={styles.sharedMedia}
-            >
-              <Transition
-                ref={transitionRef}
-                name={shouldSkipTransitionRef.current ? 'none'
-                  : resolveTransitionName('slideOptimized', animationLevel, undefined, lang.isRtl)}
-                activeKey={activeKey}
-                renderCount={tabs.length}
-                className="shared-media-transition"
-                contentSelector={shouldUseTransitionForContent ? NESTED_CONTENT_SELECTOR : undefined}
-              >
-                {renderContent()}
-              </Transition>
-            </div>
-          </>
-        )}
+              {renderContent()}
+            </Transition>
+          </div>
+        </>
+      )}
 
-        {canAddMembers && (
-          <FloatingActionButton
-            className={buildClassName(!isActive && styles.hidden)}
-            style={createVtnStyle('profileFab')}
-            isShown={canRenderContent}
-            onClick={handleNewMemberDialogOpen}
-            ariaLabel={oldLang('lng_channel_add_users')}
-            iconName="add-user-filled"
-          />
-        )}
-      </Surface>
-    </div>
+      {canAddMembers && (
+        <FloatingActionButton
+          className={buildClassName(!isActive && styles.hidden)}
+          style={createVtnStyle('profileFab')}
+          isShown={canRenderContent}
+          onClick={handleNewMemberDialogOpen}
+          ariaLabel={oldLang('lng_channel_add_users')}
+          iconName="add-user-filled"
+        />
+      )}
+    </Surface>
   );
 };
 
