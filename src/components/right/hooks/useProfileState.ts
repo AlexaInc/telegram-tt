@@ -25,6 +25,7 @@ export default function useProfileState({
   containerRef,
   tabType,
   profileState,
+  hasProfileInfo,
   onProfileStateChange,
   forceScrollProfileTab = false,
   allowAutoScrollToTabs = false,
@@ -33,6 +34,7 @@ export default function useProfileState({
   containerRef: ElementRef<HTMLDivElement>;
   tabType: ProfileTabType;
   profileState: ProfileState;
+  hasProfileInfo: boolean;
   forceScrollProfileTab?: boolean;
   allowAutoScrollToTabs?: boolean;
   onProfileStateChange: (state: ProfileState) => void;
@@ -75,7 +77,7 @@ export default function useProfileState({
     }
 
     const tabsEl = container.querySelector<HTMLDivElement>('.shared-media-tabs');
-    if (!tabsEl || getTabsNaturalTop(container) > container.scrollTop) {
+    if (!tabsEl || !hasProfileInfo || getTabsNaturalTop(container) > container.scrollTop) {
       return;
     }
 
@@ -91,7 +93,7 @@ export default function useProfileState({
     setTimeout(() => {
       isScrollingProgrammatically = false;
     }, PROGRAMMATIC_SCROLL_TIMEOUT_MS);
-  }, [profileState, containerRef]);
+  }, [profileState, containerRef, hasProfileInfo]);
 
   const determineProfileState = useLastCallback(() => {
     const container = containerRef.current;

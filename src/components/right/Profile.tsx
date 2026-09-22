@@ -717,6 +717,7 @@ const Profile = ({
     containerRef,
     tabType: resultType,
     profileState,
+    hasProfileInfo: !isSavedMessages,
     forceScrollProfileTab,
     allowAutoScrollToTabs,
     onProfileStateChange,

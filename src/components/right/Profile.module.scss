@@ -132,6 +132,7 @@
 }
 
 .sharedMedia {
+  isolation: isolate;
   position: relative;
 
   display: flex;
