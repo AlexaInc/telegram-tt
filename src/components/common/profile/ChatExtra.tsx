@@ -376,12 +376,10 @@ const ChatExtra = ({
         })
       : undefined;
 
-    const hasFilledIcon = !isChat;
-
     return (
       <ListItem
-        icon={hasFilledIcon ? 'mention-filled' : 'link'}
-        iconBg={hasFilledIcon ? 'blue' : undefined}
+        icon={isChat ? 'link' : 'mention-filled'}
+        iconBg={isChat ? 'orange' : 'blue'}
         multiline
         narrow
         ripple
@@ -483,6 +481,7 @@ const ChatExtra = ({
         {((!activeChatUsernames && canInviteUsers) || isTopicInfo) && link && (
           <ListItem
             icon="link"
+            iconBg="orange"
             multiline
             className={styles.link}
             narrow
@@ -555,8 +554,8 @@ const ChatExtra = ({
         )}
         {shouldRenderNote && (
           <ListItem
-            icon="note"
-            iconClassName={styles.noteListItemIcon}
+            icon="note-filled"
+            iconBg="green"
             multiline
             narrow
             isStatic
@@ -602,7 +601,8 @@ const ChatExtra = ({
         )}
         {hasSavedMessages && !isOwnProfile && !isInSettings && (
           <ListItem
-            icon="saved-messages"
+            icon="saved-messages-filled"
+            iconBg="blue"
             className={styles.savedMessages}
             narrow
             ripple
