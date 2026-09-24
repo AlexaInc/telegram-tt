@@ -1,6 +1,7 @@
 import type { ApiAppConfig, ApiLimitType } from './api/types';
 
 import { MULTIACCOUNT_MAX_SLOTS } from './config';
+import { isOfficialTelegramDomain } from './util/browser/domains';
 
 export const GROUP_CALL_PARTICIPANTS_LIMIT = 100;
 export const STORY_LIST_LIMIT = 100;
@@ -15,6 +16,16 @@ export const GLOBAL_SEARCH_CONTACTS_LIMIT = 20;
 export const TOP_REACTIONS_LIMIT = 100;
 export const RECENT_REACTIONS_LIMIT = 50;
 export const REACTION_LIST_LIMIT = 100;
+
+// On custom deployments (served from non-Telegram domains) all account slots are
+// available without premium bonuses
+function getMoreAccountsLimit(): readonly [number, number] {
+  if (!isOfficialTelegramDomain()) {
+    return [MULTIACCOUNT_MAX_SLOTS, MULTIACCOUNT_MAX_SLOTS];
+  }
+
+  return [3, MULTIACCOUNT_MAX_SLOTS];
+}
 
 export const DEFAULT_LIMITS: Record<ApiLimitType, readonly [number, number]> = {
   uploadMaxFileparts: [4000, 8000],
@@ -33,7 +44,7 @@ export const DEFAULT_LIMITS: Record<ApiLimitType, readonly [number, number]> = {
   recommendedChannels: [10, 100],
   savedDialogsPinned: [5, 100],
   maxReactions: [1, 3],
-  moreAccounts: [3, MULTIACCOUNT_MAX_SLOTS],
+  moreAccounts: getMoreAccountsLimit(),
   aiComposeToneSaved: [5, 20],
 };
 
