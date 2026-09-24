@@ -23,6 +23,7 @@ const INITIAL_KEYS: LangKey[] = [
   'LoginSessionStringPlaceholder',
   'LoginSessionStringSubmit',
   'ErrorSessionStringInvalid',
+  'ImportedSessionFailed',
   'YourName',
   'LoginRegisterDesc',
   'LoginRegisterFirstNamePlaceholder',

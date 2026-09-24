@@ -697,6 +697,7 @@ export interface LangPair {
   'ErrorPhoneNumberInvalid': undefined;
   'ErrorCodeInvalid': undefined;
   'ErrorSessionStringInvalid': undefined;
+  'ImportedSessionFailed': undefined;
   'ErrorEmailCodeInvalid': undefined;
   'ErrorIncorrectPassword': undefined;
   'ErrorPasswordFlood': undefined;

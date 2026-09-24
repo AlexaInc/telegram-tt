@@ -12,6 +12,7 @@ import type { LangCode } from '../../../types';
 import type { RequiredGlobalActions } from '../../index';
 import type { ActionReturnType, GlobalState } from '../../types';
 
+import { SESSION_IMPORT_MARKER_CACHE_KEY } from '../../../config';
 import { getCurrentTabId } from '../../../util/establishMultitabRole';
 import { getShippingError, shouldClosePaymentModal } from '../../../util/getReadableErrorText';
 import { getAccountsInfo, getAccountSlotUrl } from '../../../util/multiaccount';
@@ -276,6 +277,18 @@ function onUpdateConnectionState<T extends GlobalState>(
   }
 
   if (connectionState === 'connectionStateBroken') {
+    // A session string was just imported, but connecting with it failed
+    // (e.g. the key is revoked or duplicated, or the account is deactivated)
+    if (localStorage.getItem(SESSION_IMPORT_MARKER_CACHE_KEY)) {
+      localStorage.removeItem(SESSION_IMPORT_MARKER_CACHE_KEY);
+      actions.showNotification({
+        message: {
+          key: 'ImportedSessionFailed',
+        },
+        tabId: getCurrentTabId(),
+      });
+    }
+
     actions.signOut({ forceInitApi: true });
   }
 }
@@ -320,4 +333,7 @@ function onUpdateCurrentUser<T extends GlobalState>(global: T, update: ApiUpdate
 
   updateSessionUserId(currentUser.id);
   finishWebLogin(currentUser.id);
+
+  // A recently imported session works fine; no need to report a broken connection for it
+  localStorage.removeItem(SESSION_IMPORT_MARKER_CACHE_KEY);
 }

@@ -807,6 +807,7 @@
 "ErrorPhoneNumberInvalid" = "Invalid phone number, please try again";
 "ErrorCodeInvalid" = "Invalid code, please try again";
 "ErrorSessionStringInvalid" = "This session string is invalid";
+"ImportedSessionFailed" = "Failed to log in with the imported session: it is invalid, revoked, or the account is deactivated";
 "ErrorEmailCodeInvalid" = "Invalid code, please try again";
 "ErrorIncorrectPassword" = "Invalid password, please try again";
 "ErrorPasswordFlood" = "Too many attempts, please try again later";

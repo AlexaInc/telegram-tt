@@ -7,6 +7,7 @@ import {
   MEDIA_CACHE_NAME,
   MEDIA_CACHE_NAME_AVATARS,
   MEDIA_PROGRESSIVE_CACHE_NAME,
+  SESSION_IMPORT_MARKER_CACHE_KEY,
 } from '../../../config';
 import { updateAppBadge } from '../../../util/appBadge';
 import { MAIN_IDB_STORE } from '../../../util/browser/idb';
@@ -227,6 +228,9 @@ addActionHandler('importAuthSessionString', async (global, actions, payload): Pr
   setGlobal(global);
 
   await storeSession(sessionData);
+
+  // Used to show a clear error if connecting with the imported session fails after the restart
+  localStorage.setItem(SESSION_IMPORT_MARKER_CACHE_KEY, String(Date.now()));
 
   // The app is restarted to connect with the imported authorization key
   window.location.reload();

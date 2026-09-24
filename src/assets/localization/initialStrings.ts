@@ -26,6 +26,7 @@ export default {
   "LoginSessionStringPlaceholder": "Session string",
   "LoginSessionStringSubmit": "Import Session",
   "ErrorSessionStringInvalid": "This session string is invalid",
+  "ImportedSessionFailed": "Failed to log in with the imported session: it is invalid, revoked, or the account is deactivated",
   "YourName": "Your Name",
   "LoginRegisterDesc": "Enter your name and add a profile photo.",
   "LoginRegisterFirstNamePlaceholder": "First Name",

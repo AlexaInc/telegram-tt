@@ -57,6 +57,7 @@ export const GLOBAL_STATE_CACHE_ARCHIVED_CHAT_LIST_LIMIT = 10;
 export const GLOBAL_STATE_CACHE_CUSTOM_EMOJI_LIMIT = 150;
 
 export const IS_SCREEN_LOCKED_CACHE_KEY = 'tt-is-screen-locked';
+export const SESSION_IMPORT_MARKER_CACHE_KEY = 'tt-session-import-marker';
 export const SHOULD_DELETE_LEGACY_PASSCODE_DATA = false;
 
 export const MEDIA_CACHE_DISABLED = false;
