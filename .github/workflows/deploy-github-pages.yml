@@ -1,0 +1,79 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Check Telegram API credentials
+    runs-on: ubuntu-latest
+    outputs:
+      hasCredentials: ${{ steps.check.outputs.hasCredentials }}
+    steps:
+      - name: Check secrets
+        id: check
+        env:
+          HAS_CREDENTIALS: ${{ secrets.TELEGRAM_API_ID != '' && secrets.TELEGRAM_API_HASH != '' }}
+        run: |
+          if [ "$HAS_CREDENTIALS" != "true" ]; then
+            echo "::warning::Secrets TELEGRAM_API_ID and/or TELEGRAM_API_HASH are missing. Add them under Settings → Secrets and variables → Actions, then re-run this workflow to deploy."
+          fi
+          echo "hasCredentials=$HAS_CREDENTIALS" >> "$GITHUB_OUTPUT"
+
+  build:
+    name: Build
+    needs: check
+    if: needs.check.outputs.hasCredentials == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        run: npm run build:production
+        env:
+          TELEGRAM_API_ID: ${{ secrets.TELEGRAM_API_ID }}
+          TELEGRAM_API_HASH: ${{ secrets.TELEGRAM_API_HASH }}
+          BASE_URL: https://tgweb.alexa.dpdns.org/
+
+      - name: Add custom domain
+        run: echo "tgweb.alexa.dpdns.org" > dist/CNAME
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    name: Deploy
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
