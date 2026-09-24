@@ -7,6 +7,7 @@ import type { ApiCountryCode } from '../../api/types';
 import type { GlobalState } from '../../global/types';
 
 import { requestMeasure } from '../../lib/fasterdom/fasterdom';
+import { isPasskeyRpIdMatchingOrigin } from '../../util/browser/passkeys';
 import { IS_SAFARI, IS_TOUCH_ENV } from '../../util/browser/windowEnvironment';
 import { preloadImage } from '../../util/files';
 import preloadFonts from '../../util/fonts';
@@ -252,6 +253,7 @@ const AuthPhoneNumber = ({
   });
 
   const isAuthReady = state === 'authorizationStateWaitPhoneNumber';
+  const canLoginWithPasskey = Boolean(passkeyOption && isPasskeyRpIdMatchingOrigin(passkeyOption));
 
   return (
     <div id="auth-phone-number-form" className="custom-scroll">
@@ -327,7 +329,7 @@ const AuthPhoneNumber = ({
               {lang('LoginSessionString')}
             </Button>
           )}
-          {passkeyOption && (
+          {canLoginWithPasskey && (
             <Button className="auth-button" isText onClick={handleLoginWithPasskey}>
               {lang('LoginPasskey')}
             </Button>

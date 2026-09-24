@@ -8,6 +8,7 @@ import type { GlobalState } from '../../global/types';
 import { STRICTERDOM_ENABLED } from '../../config';
 import { disableStrict, enableStrict } from '../../lib/fasterdom/stricterdom';
 import { selectSharedSettings } from '../../global/selectors/sharedState';
+import { isPasskeyRpIdMatchingOrigin } from '../../util/browser/passkeys';
 import buildClassName from '../../util/buildClassName';
 import { oldSetLanguage } from '../../util/oldLangProvider';
 import { createStyledQrCode } from '../../util/qrCode/buildStyledQrCode';
@@ -139,6 +140,7 @@ const AuthCode = ({
   });
 
   const isAuthReady = state === 'authorizationStateWaitQrCode';
+  const canLoginWithPasskey = Boolean(passkeyOption && isPasskeyRpIdMatchingOrigin(passkeyOption));
 
   return (
     <div id="auth-qr-form" className="custom-scroll">
@@ -190,7 +192,7 @@ const AuthCode = ({
             {lang('LoginSessionString')}
           </Button>
         )}
-        {passkeyOption && (
+        {canLoginWithPasskey && (
           <Button className="auth-button" isText onClick={handleLoginWithPasskey}>
             {lang('LoginPasskey')}
           </Button>
